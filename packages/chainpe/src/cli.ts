@@ -21,6 +21,8 @@ import { explorerTxUrl } from "./chains.js";
 import { startProxyServer } from "./proxy/index.js";
 import { setLogLevel } from "./logger.js";
 import { ChainPeRegistryClient } from "./registry.js";
+import { registerViaBrowser } from "./wallet-connect-browser.js";
+import { runFetchCommand, runDiscoverCommand } from "./commands/consume.js";
 
 // ============================================================================
 // Constants
@@ -285,6 +287,15 @@ async function runRegister(): Promise<void> {
 
   const endpoint = (await prompt(p.text({ message: "Public endpoint URL (where clients connect)", placeholder: `http://localhost:${config.proxyPort}`, initialValue: `http://localhost:${config.proxyPort}`, validate: validateUrl }))) as string;
   const agentIdInput = (await prompt(p.text({ message: "ERC-8004 agent id (optional, blank = none)", placeholder: "0", defaultValue: "" }))) as string;
+  const agentId = agentIdInput.trim() || "0";
+
+  // Persist the agentId so `chainpe start` can advertise it on 402 responses.
+  const persistAgentId = async (): Promise<void> => {
+    if (agentId !== "0" && config.agentId !== agentId) {
+      config.agentId = agentId;
+      await saveConfig(config).catch(() => {});
+    }
+  };
 
   const alreadyExists = await registryClient.hasService(config.walletAddress, config.serviceName);
   const isUpdate = alreadyExists;
@@ -304,6 +315,52 @@ async function runRegister(): Promise<void> {
   }
   console.log();
 
+  const signMethod = await prompt(
+    p.select({
+      message: "How would you like to sign the registration transaction?",
+      options: [
+        { value: "browser", label: "Browser wallet (MetaMask / Core)", hint: "recommended — confirm in your browser" },
+        { value: "key", label: "Paste private key", hint: "signs directly in the terminal" },
+      ],
+    })
+  );
+
+  if (signMethod === "browser") {
+    console.log();
+    console.log(
+      chalk.gray(
+        `  A browser window will open. Connect ${shortAddr(config.walletAddress)} and confirm the transaction(s).`
+      )
+    );
+    const result = await registerViaBrowser({
+      registryAddress: registryClient.getContractInfo().address,
+      network: config.network,
+      walletAddress: config.walletAddress,
+      name: config.serviceName,
+      description: config.serviceDescription,
+      tags: config.tags,
+      endpoint,
+      pricePerRequest: config.pricePerRequest,
+      paymentToken: config.paymentToken,
+      agentId,
+      isUpdate,
+    });
+    if (result.success && result.txnHash) {
+      await persistAgentId();
+      console.log();
+      console.log(chalk.green(`  ✓ ${isUpdate ? "Service updated" : "Service registered"} on-chain!`));
+      console.log(chalk.gray(`    Tx: ${chalk.cyan(result.txnHash)}`));
+      console.log(chalk.gray(`    Explorer: ${chalk.cyan(explorerTxUrl(config.network, result.txnHash))}`));
+      console.log();
+      p.outro(chalk.green("Service is now discoverable on Avalanche!"));
+    } else {
+      console.log(chalk.red(`  ✗ ${result.error || "Registration was not completed in the browser"}`));
+      process.exit(1);
+    }
+    return;
+  }
+
+  // Fallback: sign in the terminal with a pasted private key.
   const privateKey = (await prompt(
     p.password({ message: "Enter your wallet private key (0x…, signs the transaction)", validate: validatePrivateKey })
   )) as string;
@@ -321,8 +378,9 @@ async function runRegister(): Promise<void> {
       paymentToken: config.paymentToken,
       walletAddress: config.walletAddress,
       network: config.network,
-      agentId: agentIdInput.trim() || "0",
+      agentId,
     });
+    await persistAgentId();
     spinner.succeed(isUpdate ? "Service updated on-chain!" : "Service registered on-chain!");
     console.log(chalk.gray(`    Tx: ${chalk.cyan(result.txnHash)}`));
     console.log(chalk.gray(`    Explorer: ${chalk.cyan(explorerTxUrl(config.network, result.txnHash))}`));
@@ -506,5 +564,27 @@ program.command("register").description("Register / update your service on-chain
 program.command("deregister").description("Remove your service from the on-chain registry").action(runDeregister);
 program.command("list").description("List all services registered on-chain").action(runList);
 program.command("status").description("Show current configuration and status").action(runStatus);
+
+program
+  .command("fetch <url>")
+  .description("Fetch a URL as a consumer, auto-paying any x402 402 in USDC (curl-level)")
+  .option("-X, --method <method>", "HTTP method (default GET)")
+  .option("-H, --header <header...>", "Request header as \"Key: Value\" (repeatable)")
+  .option("-d, --data <body>", "Request body")
+  .option("-k, --key <privateKey>", "Consumer wallet key (default: $CHAINPE_PRIVATE_KEY)")
+  .option("-n, --network <network>", "fuji | avalanche (default: $CHAINPE_NETWORK or fuji)")
+  .option("--max <usdc>", "Max USDC to auto-pay for one call (default 1)")
+  .option("--feedback", "Post positive ERC-8004 reputation after a paid call")
+  .option("--raw", "Print only the response body (for piping)")
+  .action(runFetchCommand);
+
+program
+  .command("discover [query]")
+  .description("Discover on-chain services ranked by ERC-8004 reputation")
+  .option("-n, --network <network>", "fuji | avalanche (default: $CHAINPE_NETWORK or fuji)")
+  .option("--tag <tag...>", "Filter by tag (repeatable)")
+  .option("--max-price <usdc>", "Maximum price per request in USDC")
+  .option("--json", "Output raw JSON")
+  .action(runDiscoverCommand);
 
 program.parse();

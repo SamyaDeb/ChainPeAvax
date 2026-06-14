@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AnomalyFi/chainpe.git",
+    "url": "git+https://github.com/SamyaDeb/ChainPe.git",
     "directory": "packages/chainpe-agent"
   },
   "bugs": {
-    "url": "https://github.com/AnomalyFi/chainpe/issues"
+    "url": "https://github.com/SamyaDeb/ChainPe/issues"
   },
-  "homepage": "https://github.com/AnomalyFi/chainpe#readme",
-  "author": "AnomalyFi",
+  "homepage": "https://github.com/SamyaDeb/ChainPe#readme",
+  "author": "ChainPe",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

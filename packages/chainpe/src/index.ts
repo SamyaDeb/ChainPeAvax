@@ -48,5 +48,9 @@ export {
 } from "./registry.js";
 export type { RegistrationResult, OnChainService } from "./registry.js";
 
+// Browser / MetaMask registration handoff
+export { registerViaBrowser } from "./wallet-connect-browser.js";
+export type { BrowserRegisterParams, BrowserRegisterResult } from "./wallet-connect-browser.js";
+
 // Logger
 export { logger, setLogLevel, getLogLevel, logPayment, logRequest, logServerStart } from "./logger.js";

@@ -9,6 +9,7 @@ import { registerTransferAvax } from '@/tools/transfer-avax.js'
 import { registerBazaarSearch } from '@/tools/bazaar-search.js'
 import { registerRequestFunding } from '@/tools/request-funding.js'
 import { registerSpendingReport } from '@/tools/spending-report.js'
+import { registerGiveFeedback } from '@/tools/give-feedback.js'
 
 export function createMcpServer(config: AppConfig): McpServer {
   const server = new McpServer({
@@ -33,6 +34,9 @@ export function createMcpServer(config: AppConfig): McpServer {
 
   // Discovery
   registerBazaarSearch(server, config)
+
+  // On-chain reputation (ERC-8004)
+  registerGiveFeedback(server, config)
 
   return server
 }

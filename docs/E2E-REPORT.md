@@ -1,4 +1,4 @@
-# ChainPe — End-to-End Validation Report (Phase 9)
+# ChainPe — End-to-End Validation Report
 
 Date: 2026-06-13. Run against the **live Avalanche Fuji** deployment (`docs/DEPLOYMENTS.md`).
 Payer/deployer: `0x8cC8dADfAd2D39659314106bAf4Da10B3BA38A36`. All transactions are real and on-chain.

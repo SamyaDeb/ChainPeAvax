@@ -4,6 +4,7 @@ export interface AppConfig {
   privateKey?: string
   network: PaymentNetwork
   registryAddress?: string
+  reputationRegistry?: string
   budget: BudgetConfig
   canPay: boolean
   mode: 'READ_ONLY' | 'AVALANCHE'
@@ -19,6 +20,7 @@ export interface WalletFileConfig {
   privateKey?: string
   network?: string
   registryAddress?: string
+  reputationRegistry?: string
   createdAt?: string
 }
 

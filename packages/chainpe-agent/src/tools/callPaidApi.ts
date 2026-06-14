@@ -11,12 +11,17 @@ import * as os from "os";
 
 import type { PaymentClient } from "../payment.js";
 import type { RegistryClient } from "../registry.js";
-import type { ServiceInfo, Registry } from "../types.js";
+import type { ServiceInfo, Registry, ChainPeNetwork } from "../types.js";
+import { giveFeedback } from "../reputation.js";
 
 export interface CallPaidApiToolOptions {
   paymentClient: PaymentClient;
   registryClient: RegistryClient;
   providerHint?: string;
+  /** Enables auto on-chain reputation feedback after a successful paid call. */
+  privateKey?: string;
+  network?: ChainPeNetwork;
+  reputationRegistry?: string;
 }
 
 // Track paid calls to prevent duplicates within same session
@@ -63,7 +68,8 @@ async function getLocalDeveloperAddress(): Promise<string | undefined> {
  * Creates a tool for calling paid APIs with automatic x402 payment
  */
 export function createCallPaidApiTool(options: CallPaidApiToolOptions) {
-  const { paymentClient, registryClient, providerHint } = options;
+  const { paymentClient, registryClient, providerHint, privateKey, network, reputationRegistry } =
+    options;
 
   return tool({
     description:
@@ -180,6 +186,22 @@ export function createCallPaidApiTool(options: CallPaidApiToolOptions) {
           paid: response.paid ?? false,
         });
 
+        // On-chain reputation: leave a positive ERC-8004 score for the
+        // provider's agent after a successful paid call. Best-effort.
+        let reputation: { agentId: string; score: number; txHash: string } | undefined;
+        if (response.paid && privateKey && network && service.agentId && service.agentId !== "0") {
+          try {
+            const txHash = await giveFeedback(privateKey, network, service.agentId, 100, {
+              endpoint: service.endpoint,
+              tag: "x402-success",
+              reputationRegistry,
+            });
+            reputation = { agentId: service.agentId, score: 100, txHash };
+          } catch {
+            /* self-feedback / network / no-registry — non-fatal */
+          }
+        }
+
         return {
           success: true,
           status: response.status,
@@ -192,6 +214,7 @@ export function createCallPaidApiTool(options: CallPaidApiToolOptions) {
                 recipient: response.paymentReceipt.recipient,
               }
             : undefined,
+          reputation,
         };
       } catch (error) {
         return {

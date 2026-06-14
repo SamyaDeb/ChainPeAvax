@@ -1,0 +1,261 @@
+:root {
+  --bg: #0d0d10;
+  --panel: #16161c;
+  --panel-2: #1d1d26;
+  --border: #2a2a36;
+  --text: #ececf0;
+  --muted: #9a9aa8;
+  --red: #e84142;
+  --gold: #ffd93d;
+  --green: #4ade80;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+header.nav {
+  border-bottom: 1px solid var(--border);
+  background: rgba(13, 13, 16, 0.8);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+.brand .dot {
+  color: var(--red);
+}
+
+.nav-links {
+  display: flex;
+  gap: 18px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.nav-links a:hover {
+  color: var(--text);
+}
+
+.hero {
+  padding: 48px 0 24px;
+}
+.hero h1 {
+  font-size: 32px;
+  margin: 0 0 8px;
+  letter-spacing: -0.03em;
+}
+.hero p {
+  color: var(--muted);
+  margin: 0;
+  max-width: 640px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  padding: 24px 0 64px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.card:hover {
+  border-color: var(--red);
+  transform: translateY(-2px);
+}
+.card h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+.card .desc {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 12px;
+  min-height: 40px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.price {
+  color: var(--green);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.stars {
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 600;
+}
+.stars.unrated {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.tag {
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.mono {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.empty {
+  color: var(--muted);
+  padding: 48px 0;
+  text-align: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn:hover {
+  filter: brightness(1.08);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.detail {
+  padding: 32px 0 64px;
+}
+.detail h1 {
+  margin: 0 0 6px;
+}
+.kv {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 8px 16px;
+  margin-top: 20px;
+  font-size: 14px;
+}
+.kv dt {
+  color: var(--muted);
+}
+.kv dd {
+  margin: 0;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.field label {
+  font-size: 13px;
+  color: var(--muted);
+}
+.field input {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 14px;
+}
+.field input:focus {
+  outline: none;
+  border-color: var(--red);
+}
+
+.notice {
+  font-size: 13px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 12px;
+}
+.notice.err {
+  background: rgba(232, 65, 66, 0.12);
+  color: #ff9a9a;
+}
+.notice.ok {
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--green);
+}
+.muted {
+  color: var(--muted);
+}
+.link {
+  color: var(--red);
+}

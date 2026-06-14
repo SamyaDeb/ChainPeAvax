@@ -3,9 +3,9 @@ $ErrorActionPreference = "Stop"
 
 $ROOT_DIR = Split-Path -Parent $PSScriptRoot
 $BUILD_DIR = Join-Path $ROOT_DIR ".mcpb-build"
-$OUTPUT = Join-Path $ROOT_DIR "pixa.mcpb"
+$OUTPUT = Join-Path $ROOT_DIR "chainpe.mcpb"
 
-Write-Host "Building PIXA desktop extension..." -ForegroundColor Cyan
+Write-Host "Building ChainPe desktop extension..." -ForegroundColor Cyan
 
 # 1. Clean
 if (Test-Path $BUILD_DIR) { Remove-Item -Recurse -Force $BUILD_DIR }
@@ -47,13 +47,13 @@ if (Test-Path "node_modules/ox/_cjs") { Remove-Item "node_modules/ox/_cjs" -Recu
 # 7. Copy manifest and icon
 Set-Location $BUILD_DIR
 Copy-Item "$ROOT_DIR/manifest.json" "manifest.json"
-if (Test-Path "$ROOT_DIR/PIXA-LOGO.PNG") {
-    Copy-Item "$ROOT_DIR/PIXA-LOGO.PNG" "PIXA-LOGO.PNG"
+if (Test-Path "$ROOT_DIR/chainpe-logo.png") {
+    Copy-Item "$ROOT_DIR/chainpe-logo.png" "chainpe-logo.png"
 }
 
 # 8. Pack
 Write-Host "Packing .mcpb bundle..." -ForegroundColor Yellow
-$tempZip = Join-Path $ROOT_DIR "pixa.zip"
+$tempZip = Join-Path $ROOT_DIR "chainpe.zip"
 Compress-Archive -Path "$BUILD_DIR/*" -DestinationPath $tempZip -Force
 Move-Item $tempZip $OUTPUT -Force
 
@@ -67,5 +67,5 @@ Write-Host ""
 Write-Host "Done! Created: $OUTPUT ($([math]::Round($size, 2)) MB)" -ForegroundColor Green
 Write-Host ""
 Write-Host "Install in Claude Desktop:" -ForegroundColor Cyan
-Write-Host "  - Double-click pixa.mcpb"
+Write-Host "  - Double-click chainpe.mcpb"
 Write-Host "  - Or drag it into Claude Desktop settings"

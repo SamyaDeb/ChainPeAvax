@@ -38,7 +38,7 @@ export function createProxyServer(options: ProxyServerOptions): Express {
   const { config, additionalRoutes, onPayment, facilitatorKey } = options;
   const app = express();
 
-  app.use(cors());
+  app.use(cors({ exposedHeaders: ["X-PAYMENT-RESPONSE", "X-CHAINPE-AGENT-ID"] }));
 
   // Request logging / counting (raw — no body parsing, so proxying is unaffected).
   app.use((req: Request, res: Response, next: NextFunction) => {
@@ -98,6 +98,40 @@ export function createProxyServer(options: ProxyServerOptions): Express {
       "No facilitator configured. Payments cannot be settled on Avalanche.\n" +
         "  Set facilitatorUrl in config, or run `chainpe start --facilitator <privateKey>`."
     );
+  }
+
+  // 3b: advertise this provider's ERC-8004 agentId on the 402 so consumers can
+  // leave reputation feedback without scanning the whole registry by payTo. The
+  // id is added to the response body (top-level + each accept's `extra`) and an
+  // `X-CHAINPE-AGENT-ID` header.
+  const advertisedAgentId = config.agentId ?? process.env.CHAINPE_AGENT_ID;
+  if (advertisedAgentId && advertisedAgentId !== "0") {
+    app.use((_req: Request, res: Response, next: NextFunction) => {
+      const originalJson = res.json.bind(res);
+      res.json = ((body: unknown) => {
+        if (
+          res.statusCode === 402 &&
+          body !== null &&
+          typeof body === "object" &&
+          Array.isArray((body as { accepts?: unknown }).accepts)
+        ) {
+          res.setHeader("X-CHAINPE-AGENT-ID", advertisedAgentId);
+          const b = body as {
+            agentId?: string;
+            accepts: Array<Record<string, unknown>>;
+          };
+          b.agentId = advertisedAgentId;
+          for (const accept of b.accepts) {
+            accept.extra = {
+              ...((accept.extra as Record<string, unknown>) ?? {}),
+              agentId: advertisedAgentId,
+            };
+          }
+        }
+        return originalJson(body);
+      }) as typeof res.json;
+      next();
+    });
   }
 
   // x402 routes.

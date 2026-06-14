@@ -10,6 +10,7 @@ import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { AppConfig } from '@/types.js'
 import { RegistryClient } from '@/chainpe-registry.js'
+import { getReputation } from '@/reputation.js'
 
 export function registerBazaarSearch(
   server: McpServer,
@@ -58,15 +59,52 @@ export function registerBazaarSearch(
           }
         }
 
-        const serviceList = services
-          .map(
-            (s, i) =>
+        // Read each provider's on-chain ERC-8004 reputation (best-effort).
+        const reputations = await Promise.all(
+          services.map(s =>
+            s.agentId ? getReputation(config, s.agentId) : Promise.resolve(null)
+          )
+        )
+
+        // Rank by reputation: scored first, higher score, then more reviews,
+        // then cheaper. Keeps the most trustworthy providers at the top.
+        const ranked = services
+          .map((s, i) => {
+            const r = reputations[i]
+            const score = r && r.count > 0 && r.score !== null ? r.score : null
+            return { service: s, rep: r, score, count: r?.count ?? 0 }
+          })
+          .sort((a, b) => {
+            const aHas = a.score != null
+            const bHas = b.score != null
+            if (aHas !== bHas) return aHas ? -1 : 1
+            if (aHas && bHas && a.score !== b.score) return b.score! - a.score!
+            if (a.count !== b.count) return b.count - a.count
+            return (
+              parseFloat(a.service.pricePerRequest) -
+              parseFloat(b.service.pricePerRequest)
+            )
+          })
+
+        const serviceList = ranked
+          .map(({ service: s, rep }, i) => {
+            let repLine = ''
+            if (s.agentId) {
+              if (rep && rep.count > 0 && rep.score !== null) {
+                repLine = `  ·  ⭐ ${rep.score.toFixed(0)}/100 (${rep.count} review${rep.count === 1 ? '' : 's'})`
+              } else {
+                repLine = '  ·  ⭐ no ratings yet'
+              }
+            }
+            return (
               `${i + 1}. ${s.name} — ${s.description}\n` +
               `   Price: ${s.pricePerRequest} ${s.paymentToken}` +
               (s.tags.length ? `  ·  Tags: ${s.tags.join(', ')}` : '') +
-              (s.agentId ? `  ·  Agent ID: ${s.agentId} (ERC-8004)` : '') +
+              (s.agentId ? `  ·  Agent ID: ${s.agentId}` : '') +
+              repLine +
               `\n   Endpoint: ${s.endpoint}`
-          )
+            )
+          })
           .join('\n\n')
 
         const header = query

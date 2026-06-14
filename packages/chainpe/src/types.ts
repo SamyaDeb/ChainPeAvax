@@ -47,6 +47,11 @@ export interface ChainPeConfig {
   // Deployed ChainPeRegistry contract address (0x...)
   registryAddress?: string;
 
+  // ERC-8004 agent identity for this service (persisted on register). When set,
+  // the proxy advertises it on 402 responses so consumers can leave reputation
+  // feedback without scanning the registry. Override via CHAINPE_AGENT_ID.
+  agentId?: string;
+
   // x402 facilitator URL (verifies + settles payments, pays gas). Optional —
   // when omitted, `chainpe start --facilitator <key>` runs one in-process.
   facilitatorUrl?: string;

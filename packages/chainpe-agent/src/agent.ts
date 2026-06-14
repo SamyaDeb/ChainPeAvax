@@ -46,6 +46,7 @@ export class ChainPeAgent {
   private config: AgentConfig | null = null;
   private registryClient: RegistryClient | null = null;
   private paymentClient: PaymentClient | null = null;
+  private privateKey: string | null = null;
   private verbose: boolean;
   private initialized: boolean = false;
 
@@ -87,6 +88,7 @@ export class ChainPeAgent {
     }
 
     // Initialize payment client with the key from keychain
+    this.privateKey = privateKey;
     this.paymentClient = new PaymentClient({ privateKey, network });
 
     this.initialized = true;
@@ -159,18 +161,25 @@ export class ChainPeAgent {
     }
 
     const { includeDiscover = true, includeFree = true, providerHint } = options;
+    const network = this.config?.network || "fuji";
+    const reputationRegistry = this.config?.reputationRegistry;
 
     const tools: any = {
       callPaidApi: createCallPaidApiTool({
         paymentClient: this.paymentClient,
         registryClient: this.registryClient,
         providerHint,
+        privateKey: this.privateKey ?? undefined,
+        network,
+        reputationRegistry,
       }),
     };
 
     if (includeDiscover) {
       tools.discoverService = createDiscoverServiceTool({
         registryClient: this.registryClient,
+        network,
+        reputationRegistry,
       });
     }
 

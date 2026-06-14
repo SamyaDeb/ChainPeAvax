@@ -52,6 +52,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@chainpe/sdk": "^0.1.0",
     "@clack/prompts": "^0.9.1",
     "chalk": "^5.4.1",
     "commander": "^14.0.0",

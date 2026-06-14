@@ -14,6 +14,10 @@
     "deploy:erc8004:mainnet": "hardhat run scripts/deploy-erc8004.ts --network avalanche",
     "deploy:fuji": "hardhat run scripts/deploy.ts --network fuji",
     "deploy:mainnet": "hardhat run scripts/deploy.ts --network avalanche",
+    "deploy:policyvault:fuji": "hardhat run scripts/deploy-policyvault.ts --network fuji",
+    "deploy:policyvault:mainnet": "hardhat run scripts/deploy-policyvault.ts --network avalanche",
+    "deploy:icm:fuji": "hardhat run scripts/deploy-icm.ts --network fuji",
+    "deploy:icm:mainnet": "hardhat run scripts/deploy-icm.ts --network avalanche",
     "verify:fuji": "hardhat run scripts/verify.ts --network fuji",
     "node": "hardhat node"
   },

@@ -24,6 +24,10 @@ function buildState(): Omit<AppConfig, 'reload'> {
   const network = normalizeNetwork(process.env.NETWORK ?? wallet?.network)
   const registryAddress =
     process.env.CHAINPE_REGISTRY_ADDRESS ?? wallet?.registryAddress ?? undefined
+  const reputationRegistry =
+    process.env.ERC8004_REPUTATION_REGISTRY ??
+    wallet?.reputationRegistry ??
+    undefined
 
   const maxPerCall = process.env.MAX_PER_CALL ?? '0.10'
   const maxPerDay = process.env.MAX_PER_DAY ?? '20.00'
@@ -34,6 +38,7 @@ function buildState(): Omit<AppConfig, 'reload'> {
     privateKey,
     network,
     registryAddress,
+    reputationRegistry,
     budget: { maxPerCall, maxPerDay },
     canPay,
     mode: canPay ? 'AVALANCHE' : 'READ_ONLY'

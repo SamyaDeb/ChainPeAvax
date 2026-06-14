@@ -48,6 +48,7 @@ export interface AgentConfig {
   registryPath?: string;
   network?: ChainPeNetwork;
   registryAddress?: string; // Deployed ChainPeRegistry contract address (0x)
+  reputationRegistry?: string; // ERC-8004 Reputation Registry address (0x)
 }
 
 // ============================================================================

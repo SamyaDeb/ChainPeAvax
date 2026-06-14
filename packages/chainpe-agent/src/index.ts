@@ -73,6 +73,14 @@ export {
 // Payment
 export { PaymentClient, createPaymentClient, type PaymentClientOptions } from "./payment.js";
 
+// Reputation (ERC-8004, on-chain)
+export {
+  getReputation,
+  giveFeedback,
+  resolveReputationRegistry,
+  type ReputationSummary,
+} from "./reputation.js";
+
 // Tools (for advanced users who want to customize the agent)
 export {
   createDiscoverServiceTool,

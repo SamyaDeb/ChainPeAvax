@@ -10,10 +10,13 @@ import * as path from "path";
 import * as os from "os";
 
 import type { RegistryClient } from "../registry.js";
-import type { ServiceInfo, Registry } from "../types.js";
+import type { ServiceInfo, Registry, ChainPeNetwork } from "../types.js";
+import { getReputation } from "../reputation.js";
 
 export interface DiscoverServiceToolOptions {
   registryClient: RegistryClient;
+  network: ChainPeNetwork;
+  reputationRegistry?: string;
 }
 
 /**
@@ -111,7 +114,7 @@ function filterServices(
  * Creates a tool for discovering services in the registry
  */
 export function createDiscoverServiceTool(options: DiscoverServiceToolOptions) {
-  const { registryClient } = options;
+  const { registryClient, network, reputationRegistry } = options;
 
   return tool({
     description:
@@ -186,16 +189,33 @@ export function createDiscoverServiceTool(options: DiscoverServiceToolOptions) {
           return 0;
         });
 
+        // Attach each provider's on-chain ERC-8004 reputation (best-effort).
+        const services = await Promise.all(
+          sorted.map(async (s) => {
+            const rep = s.agentId
+              ? await getReputation(network, s.agentId, reputationRegistry)
+              : null;
+            return {
+              name: s.name,
+              description: s.description,
+              price: `${s.pricePerRequest} ${s.paymentToken}`,
+              tags: s.tags,
+              endpoint: s.endpoint,
+              agentId: s.agentId,
+              reputation:
+                rep && rep.count > 0 && rep.score !== null
+                  ? { score: rep.score, reviews: rep.count }
+                  : s.agentId
+                    ? "no ratings yet"
+                    : "not registered for reputation",
+            };
+          })
+        );
+
         return {
           found: true,
           message: `Found ${sorted.length} service(s)${allServices.length !== sorted.length ? ` (${allServices.length} total available)` : ''}`,
-          services: sorted.map((s) => ({
-            name: s.name,
-            description: s.description,
-            price: `${s.pricePerRequest} ${s.paymentToken}`,
-            tags: s.tags,
-            endpoint: s.endpoint,
-          })),
+          services,
         };
       } catch (error) {
         return {

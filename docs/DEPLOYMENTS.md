@@ -34,6 +34,17 @@ export ERC8004_REPUTATION_REGISTRY=0x89476DfEf9c72a668fa5E86f154B73EDB053aFe4
 
 Raw deployment records: `contracts/deployments/fuji.json`, `contracts/deployments/fuji-erc8004.json`.
 
+## Hosted services (Avalanche Fuji)
+
+| Service | URL | Notes |
+|---|---|---|
+| **Marketplace dashboard** | https://chainpe-dashboard-production.up.railway.app | Next.js; reads via the indexer |
+| **Indexer API** | https://chainpe-indexer-production.up.railway.app | `/services` · `/services/:id` · `/stats` · `/health`; Postgres on Neon |
+| **Facilitator** | _pending_ | Needs a funded `FACILITATOR_PRIVATE_KEY` + Railway plan headroom; deploy per [`../services/chainpe-facilitator/DEPLOY.md`](../services/chainpe-facilitator/DEPLOY.md) |
+
+Deployed on Railway. The indexer's Neon `DATABASE_URL` and the facilitator's gas
+key live only in the platform secret store — never in git.
+
 ## Avalanche Mainnet (43114)
 
 Not yet deployed. Use `npm run deploy:erc8004:mainnet` then `npm run deploy:mainnet` from `contracts/` with a funded `DEPLOYER_PRIVATE_KEY`.

@@ -6,6 +6,57 @@ import { decodeXPaymentResponse } from 'x402-fetch'
 import type { AppConfig, PaymentNetwork } from '@/types.js'
 import type { SpendingTracker } from '@/spending.js'
 import { buildSigner, USDC_DECIMALS } from '@/clients.js'
+import { RegistryClient } from '@/chainpe-registry.js'
+import { giveFeedback, resolveReputationRegistry } from '@/reputation.js'
+
+/**
+ * After a successful paid call, record a positive on-chain reputation score for
+ * the provider's ERC-8004 agent. Resolves the agent by matching the 402 payTo
+ * (or the URL) against the on-chain registry. Best-effort — any failure
+ * (no agentId, no registry, self-feedback, network) is swallowed.
+ */
+async function submitSuccessFeedback(
+  config: AppConfig,
+  url: string,
+  payTo: string,
+  advertisedAgentId?: string
+): Promise<
+  | { agentId: string; score: number; txHash: string }
+  | { note: string }
+  | undefined
+> {
+  try {
+    if (!resolveReputationRegistry(config)) return undefined
+
+    // 3b: prefer the provider-advertised agent id; otherwise fall back to a
+    // registry scan by payTo / URL (requires a registry address).
+    let agentId = advertisedAgentId
+    let endpoint: string | undefined
+    if (!agentId || agentId === '0') {
+      if (!config.registryAddress) return undefined
+      const client = new RegistryClient(config.network, config.registryAddress)
+      const services = await client.listAllServices()
+      const svc =
+        services.find(
+          s =>
+            s.walletAddress.toLowerCase() === payTo.toLowerCase() && s.agentId
+        ) ?? services.find(s => url.startsWith(s.endpoint) && s.agentId)
+      agentId = svc?.agentId
+      endpoint = svc?.endpoint
+    }
+
+    if (!agentId || agentId === '0') return undefined
+    const txHash = await giveFeedback(config, {
+      agentId,
+      value: 100,
+      endpoint: endpoint ?? new URL(url).origin,
+      tag: 'x402-success'
+    })
+    return { agentId, score: 100, txHash }
+  } catch {
+    return undefined
+  }
+}
 
 interface PaymentAccept {
   scheme: string
@@ -24,6 +75,8 @@ interface PaymentRequiredBody {
   x402Version: number
   error?: string
   accepts: PaymentAccept[]
+  /** ChainPe extension (3b): the provider's ERC-8004 agent id. */
+  agentId?: string
 }
 
 const X402_TO_NETWORK: Record<string, PaymentNetwork> = {
@@ -228,6 +281,20 @@ export function registerX402Fetch(
           }
         }
 
+        // On-chain reputation: leave a positive score for the provider's
+        // ERC-8004 agent. Best-effort and non-blocking — never fails the fetch.
+        // 3b: prefer the agent id advertised on the 402 to skip a registry scan.
+        const advertisedAgentId =
+          initial.headers.get('x-chainpe-agent-id') ??
+          paymentRequired.agentId ??
+          (accept.extra?.agentId as string | undefined)
+        const feedback = await submitSuccessFeedback(
+          config,
+          url,
+          accept.payTo,
+          advertisedAgentId
+        )
+
         return {
           content: [
             {
@@ -245,7 +312,8 @@ export function registerX402Fetch(
                     recipient: accept.payTo,
                     network
                   },
-                  settlement: settlement ?? undefined
+                  settlement: settlement ?? undefined,
+                  reputation: feedback
                 },
                 null,
                 2

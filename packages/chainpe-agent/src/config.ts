@@ -49,6 +49,7 @@ export async function saveConfig(config: AgentConfig): Promise<void> {
     payment: config.payment,
     registryPath: config.registryPath,
     registryAddress: config.registryAddress,
+    reputationRegistry: config.reputationRegistry,
     network: config.network,
   };
   await fs.writeFile(CONFIG_FILE, JSON.stringify(clean, null, 2), { mode: 0o600 });
@@ -126,6 +127,7 @@ export interface ConfigBuilder {
   preferredToken: PaymentToken;
   registryPath?: string;
   registryAddress?: string;
+  reputationRegistry?: string;
   network?: ChainPeNetwork;
 }
 
@@ -144,6 +146,7 @@ export function buildConfig(builder: ConfigBuilder): AgentConfig {
     payment: { preferredToken: builder.preferredToken },
     registryPath: builder.registryPath || DEFAULT_REGISTRY_PATH,
     registryAddress: builder.registryAddress,
+    reputationRegistry: builder.reputationRegistry,
     network: builder.network || "fuji",
   };
 }

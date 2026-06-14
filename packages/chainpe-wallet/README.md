@@ -8,9 +8,8 @@ server packaged as a Claude Desktop extension (`.mcpb`). Install it, drop in you
 Avalanche wallet, set spending limits, and Claude can discover paid services,
 pay for them within your budget, and return the results in the chat.
 
-It is a fork of [ChainPe](https://github.com/soumyacodes007/ChainPe) (MIT), trimmed to
-Avalanche-only and rewired so discovery reads the on-chain **ChainPeRegistry**
-contract instead of ChainPe's hosted marketplace.
+Discovery reads directly from the on-chain **ChainPeRegistry** contract on
+Avalanche — no hosted backend or accounts required.
 
 ## How it works
 
@@ -23,7 +22,13 @@ contract instead of ChainPe's hosted marketplace.
    *before* any payment is signed.
 
 Other tools: `check_balance`, `pay`, `transfer_usdc`, `transfer_avax`,
-`spending_report`, `request_funding`, `search_bazaar`.
+`spending_report`, `request_funding`, `search_bazaar`, `give_feedback`.
+
+**On-chain reputation (ERC-8004):** after a successful paid `x402_fetch`, the
+wallet automatically posts a positive on-chain score for the provider's agent.
+`search_bazaar` surfaces each provider's aggregate score (read from the
+Reputation Registry), and `give_feedback` lets you score a provider manually.
+Set `ERC8004_REPUTATION_REGISTRY` (defaults to the deployed Fuji registry).
 
 ## Configuration
 
