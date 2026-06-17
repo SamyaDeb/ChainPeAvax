@@ -162,8 +162,8 @@ describe("ChainPeRegistry", () => {
 
   // --- update ---------------------------------------------------------------
   describe("update", () => {
-    it("updates fields, preserves createdAt/developer, charges fee", async () => {
-      const { registry, usdc, dev, treasury } = await loadFixture(deployFixture);
+    it("updates fields, preserves createdAt/developer; update is free by default", async () => {
+      const { registry, usdc, dev, owner, treasury } = await loadFixture(deployFixture);
       await registry.connect(dev).register(input());
       const before = await registry.getService(dev.address, "Weather API");
 
@@ -180,7 +180,22 @@ describe("ChainPeRegistry", () => {
       expect(after.agentId).to.equal(7n);
       expect(after.createdAt).to.equal(before.createdAt);
       expect(after.updatedAt).to.be.greaterThan(before.updatedAt);
-      expect(await usdc.balanceOf(treasury.address)).to.equal(FEE * 2n); // register + update
+      // updateFee defaults to 0 — only the registration fee was collected.
+      expect(await usdc.balanceOf(treasury.address)).to.equal(FEE);
+    });
+
+    it("owner can set updateFee; update then charges that fee", async () => {
+      const { registry, usdc, dev, owner, treasury } = await loadFixture(deployFixture);
+      await registry.connect(dev).register(input());
+      const UPDATE_FEE = ethers.parseUnits("0.05", 6);
+      await expect(registry.connect(owner).setUpdateFee(UPDATE_FEE))
+        .to.emit(registry, "UpdateFeeUpdated")
+        .withArgs(0n, UPDATE_FEE);
+      expect(await registry.updateFee()).to.equal(UPDATE_FEE);
+
+      await registry.connect(dev).update(input({ description: "Charged update" }));
+      // Treasury received register fee + update fee.
+      expect(await usdc.balanceOf(treasury.address)).to.equal(FEE + UPDATE_FEE);
     });
 
     it("reverts updating a non-existent service", async () => {
@@ -356,6 +371,115 @@ describe("ChainPeRegistry", () => {
       await registry.connect(dev).register(input());
       const key = await registry.computeKey(dev.address, "Weather API");
       expect(await registry.getServiceKeyAt(0)).to.equal(key);
+    });
+  });
+
+  // --- string length validation -------------------------------------------
+  describe("string length validation", () => {
+    it("rejects a name longer than 64 bytes", async () => {
+      const { registry, dev } = await loadFixture(deployFixture);
+      const longName = "A".repeat(65);
+      await expect(
+        registry.connect(dev).register(input({ name: longName }))
+      ).to.be.revertedWithCustomError(registry, "StringTooLong");
+    });
+
+    it("rejects a description longer than 1024 bytes", async () => {
+      const { registry, dev } = await loadFixture(deployFixture);
+      const longDesc = "D".repeat(1025);
+      await expect(
+        registry.connect(dev).register(input({ description: longDesc }))
+      ).to.be.revertedWithCustomError(registry, "StringTooLong");
+    });
+
+    it("rejects an endpoint longer than 256 bytes on update", async () => {
+      const { registry, dev } = await loadFixture(deployFixture);
+      await registry.connect(dev).register(input());
+      const longEndpoint = "https://example.com/" + "p".repeat(240);
+      await expect(
+        registry.connect(dev).update(input({ endpoint: longEndpoint }))
+      ).to.be.revertedWithCustomError(registry, "StringTooLong");
+    });
+
+    it("accepts strings at the boundary", async () => {
+      const { registry, dev } = await loadFixture(deployFixture);
+      const boundaryName = "A".repeat(64);
+      await expect(
+        registry.connect(dev).register(input({ name: boundaryName }))
+      ).to.emit(registry, "ServiceRegistered");
+    });
+  });
+
+  // --- getServices limit cap -----------------------------------------------
+  describe("getServices page size cap", () => {
+    it("reverts when limit exceeds MAX_SERVICES_PER_PAGE (100)", async () => {
+      const { registry } = await loadFixture(deployFixture);
+      await expect(registry.getServices(0, 101)).to.be.revertedWithCustomError(
+        registry, "InvalidPagination"
+      );
+    });
+
+    it("accepts limit == 100", async () => {
+      const { registry, dev } = await loadFixture(deployFixture);
+      await registry.connect(dev).register(input());
+      const page = await registry.getServices(0, 100);
+      expect(page.length).to.equal(1);
+    });
+  });
+
+  // --- ownerWithdraw -------------------------------------------------------
+  describe("ownerWithdraw", () => {
+    it("owner can rescue accidentally sent tokens", async () => {
+      const { registry, usdc, owner, dev } = await loadFixture(deployFixture);
+      // Simulate tokens stuck in the contract by a direct transfer.
+      await usdc.mint(owner.address, ethers.parseUnits("5", 6));
+      await usdc.connect(owner).transfer(await registry.getAddress(), ethers.parseUnits("5", 6));
+
+      const before = await usdc.balanceOf(owner.address);
+      await registry.connect(owner).ownerWithdraw(await usdc.getAddress(), ethers.parseUnits("5", 6));
+      expect(await usdc.balanceOf(owner.address)).to.equal(before + ethers.parseUnits("5", 6));
+    });
+
+    it("non-owner cannot call ownerWithdraw", async () => {
+      const { registry, usdc, dev } = await loadFixture(deployFixture);
+      await expect(
+        registry.connect(dev).ownerWithdraw(await usdc.getAddress(), 1n)
+      ).to.be.revertedWithCustomError(registry, "OwnableUnauthorizedAccount");
+    });
+  });
+
+  // --- pause / unpause -----------------------------------------------------
+  describe("pause / unpause", () => {
+    it("owner can pause; non-owner cannot", async () => {
+      const { registry, owner, dev } = await loadFixture(deployFixture);
+      await expect(registry.connect(dev).pause()).to.be.revertedWithCustomError(
+        registry, "OwnableUnauthorizedAccount"
+      );
+      await registry.connect(owner).pause();
+      await expect(registry.connect(dev).unpause()).to.be.revertedWithCustomError(
+        registry, "OwnableUnauthorizedAccount"
+      );
+      await registry.connect(owner).unpause();
+    });
+
+    it("register, update, and deregister revert when paused", async () => {
+      const { registry, owner, dev } = await loadFixture(deployFixture);
+      await registry.connect(dev).register(input());
+      await registry.connect(owner).pause();
+
+      await expect(registry.connect(dev).register(input({ name: "NewService" }))).to.be.revertedWithCustomError(
+        registry, "EnforcedPause"
+      );
+      await expect(registry.connect(dev).update(input({ description: "Updated" }))).to.be.revertedWithCustomError(
+        registry, "EnforcedPause"
+      );
+      await expect(registry.connect(dev).deregister("Weather API")).to.be.revertedWithCustomError(
+        registry, "EnforcedPause"
+      );
+
+      // unpause restores normal operation
+      await registry.connect(owner).unpause();
+      await expect(registry.connect(dev).deregister("Weather API")).to.emit(registry, "ServiceDeregistered");
     });
   });
 });

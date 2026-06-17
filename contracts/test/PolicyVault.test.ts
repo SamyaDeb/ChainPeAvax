@@ -86,8 +86,9 @@ describe("PolicyVault", () => {
       await vault.connect(owner).withdraw(USDC("400"));
       expect(await vault.balanceOf(owner.address)).to.equal(USDC("600"));
       expect(await usdc.balanceOf(owner.address)).to.equal(USDC("400"));
-      await expect(vault.connect(owner).withdraw(USDC("601"))).to.be.revertedWith(
-        "insufficient balance"
+      await expect(vault.connect(owner).withdraw(USDC("601"))).to.be.revertedWithCustomError(
+        vault,
+        "InsufficientBalance"
       );
     });
   });
@@ -132,7 +133,7 @@ describe("PolicyVault", () => {
       const sig = await signSpend(vault, agent, owner.address, provider.address, USDC("11"), 0n, deadline);
       await expect(
         vault.connect(relayer).spend(owner.address, provider.address, USDC("11"), deadline, sig)
-      ).to.be.revertedWith("over per-call cap");
+      ).to.be.revertedWithCustomError(vault, "OverPerCallCap");
     });
 
     it("rejects a spend over the daily cap", async () => {
@@ -145,12 +146,13 @@ describe("PolicyVault", () => {
       const s2 = await signSpend(vault, agent, owner.address, provider.address, USDC("15"), 1n, d2);
       await expect(
         vault.connect(relayer).spend(owner.address, provider.address, USDC("15"), d2, s2)
-      ).to.be.revertedWith("over daily cap");
+      ).to.be.revertedWithCustomError(vault, "OverDailyCap");
     });
 
     it("rejects a spend over the total budget", async () => {
       const { vault, owner, agent, relayer, provider } = await loadFixture(deployFixture);
-      await setDefaultPolicy(vault, owner, agent, { totalBudget: USDC("8"), maxPerCall: USDC("10") });
+      // maxPerCall must be <= totalBudget; use equal values so the first spend exhausts the budget.
+      await setDefaultPolicy(vault, owner, agent, { totalBudget: USDC("8"), maxPerCall: USDC("8") });
       const d1 = (await time.latest()) + 600;
       const s1 = await signSpend(vault, agent, owner.address, provider.address, USDC("8"), 0n, d1);
       await vault.connect(relayer).spend(owner.address, provider.address, USDC("8"), d1, s1);
@@ -158,7 +160,7 @@ describe("PolicyVault", () => {
       const s2 = await signSpend(vault, agent, owner.address, provider.address, USDC("1"), 1n, d2);
       await expect(
         vault.connect(relayer).spend(owner.address, provider.address, USDC("1"), d2, s2)
-      ).to.be.revertedWith("over total budget");
+      ).to.be.revertedWithCustomError(vault, "OverTotalBudget");
     });
 
     it("enforces the recipient allowlist when allowlistOnly is set", async () => {
@@ -169,7 +171,7 @@ describe("PolicyVault", () => {
       const sBad = await signSpend(vault, agent, owner.address, other.address, USDC("5"), 0n, d1);
       await expect(
         vault.connect(relayer).spend(owner.address, other.address, USDC("5"), d1, sBad)
-      ).to.be.revertedWith("recipient not allowlisted");
+      ).to.be.revertedWithCustomError(vault, "RecipientNotAllowlisted");
 
       await vault.connect(owner).setAllowlist(provider.address, true);
       const sOk = await signSpend(vault, agent, owner.address, provider.address, USDC("5"), 0n, d1);
@@ -188,7 +190,7 @@ describe("PolicyVault", () => {
       const sPast = await signSpend(vault, agent, owner.address, provider.address, USDC("5"), 0n, past);
       await expect(
         vault.connect(relayer).spend(owner.address, provider.address, USDC("5"), past, sPast)
-      ).to.be.revertedWith("auth expired");
+      ).to.be.revertedWithCustomError(vault, "AuthExpired");
 
       // advance past session expiry
       await time.increaseTo(expiry + 10);
@@ -196,7 +198,7 @@ describe("PolicyVault", () => {
       const s = await signSpend(vault, agent, owner.address, provider.address, USDC("5"), 0n, d);
       await expect(
         vault.connect(relayer).spend(owner.address, provider.address, USDC("5"), d, s)
-      ).to.be.revertedWith("session expired");
+      ).to.be.revertedWithCustomError(vault, "SessionExpired");
     });
 
     it("rejects a bad session signature and replayed authorizations", async () => {
@@ -208,7 +210,7 @@ describe("PolicyVault", () => {
       const bad = await signSpend(vault, other, owner.address, provider.address, USDC("5"), 0n, d);
       await expect(
         vault.connect(relayer).spend(owner.address, provider.address, USDC("5"), d, bad)
-      ).to.be.revertedWith("bad session sig");
+      ).to.be.revertedWithCustomError(vault, "BadSessionSig");
 
       // valid once…
       const good = await signSpend(vault, agent, owner.address, provider.address, USDC("5"), 0n, d);
@@ -216,7 +218,7 @@ describe("PolicyVault", () => {
       // …replay fails (nonce advanced)
       await expect(
         vault.connect(relayer).spend(owner.address, provider.address, USDC("5"), d, good)
-      ).to.be.revertedWith("bad session sig");
+      ).to.be.revertedWithCustomError(vault, "BadSessionSig");
     });
 
     it("rejects spends after the owner revokes the session", async () => {
@@ -227,7 +229,7 @@ describe("PolicyVault", () => {
       const sig = await signSpend(vault, agent, owner.address, provider.address, USDC("5"), 0n, d);
       await expect(
         vault.connect(relayer).spend(owner.address, provider.address, USDC("5"), d, sig)
-      ).to.be.revertedWith("session inactive");
+      ).to.be.revertedWithCustomError(vault, "SessionInactive");
     });
 
     it("rejects a spend exceeding the vault balance", async () => {
@@ -238,7 +240,7 @@ describe("PolicyVault", () => {
       const sig = await signSpend(vault, agent, owner.address, provider.address, USDC("5"), 0n, d);
       await expect(
         vault.connect(relayer).spend(owner.address, provider.address, USDC("5"), d, sig)
-      ).to.be.revertedWith("insufficient vault balance");
+      ).to.be.revertedWithCustomError(vault, "InsufficientVaultBalance");
     });
   });
 
@@ -254,6 +256,134 @@ describe("PolicyVault", () => {
       await vault.connect(relayer).spend(owner.address, provider.address, USDC("5"), d, sig);
       expect(await vault.dailyRemaining(owner.address)).to.equal(USDC("15"));
       expect(await vault.budgetRemaining(owner.address)).to.equal(USDC("45"));
+    });
+  });
+
+  describe("previewSpend view", () => {
+    it("returns ok=true when all constraints are satisfied", async () => {
+      const { vault, owner, agent, provider } = await loadFixture(deployFixture);
+      await setDefaultPolicy(vault, owner, agent);
+      const [ok, reason] = await vault.previewSpend(owner.address, provider.address, USDC("5"));
+      expect(ok).to.equal(true);
+      expect(reason).to.equal("");
+    });
+
+    it("returns ok=false with 'session inactive' after revoking", async () => {
+      const { vault, owner, agent, provider } = await loadFixture(deployFixture);
+      await setDefaultPolicy(vault, owner, agent);
+      await vault.connect(owner).revokeSession();
+      const [ok, reason] = await vault.previewSpend(owner.address, provider.address, USDC("5"));
+      expect(ok).to.equal(false);
+      expect(reason).to.equal("session inactive");
+    });
+
+    it("returns ok=false with 'over per-call cap' when amount exceeds cap", async () => {
+      const { vault, owner, agent, provider } = await loadFixture(deployFixture);
+      await setDefaultPolicy(vault, owner, agent, { maxPerCall: USDC("10") });
+      const [ok, reason] = await vault.previewSpend(owner.address, provider.address, USDC("11"));
+      expect(ok).to.equal(false);
+      expect(reason).to.equal("over per-call cap");
+    });
+
+    it("returns ok=false with 'recipient not allowlisted' when allowlistOnly is set", async () => {
+      const { vault, owner, agent, other } = await loadFixture(deployFixture);
+      await setDefaultPolicy(vault, owner, agent, { allowlistOnly: true });
+      const [ok, reason] = await vault.previewSpend(owner.address, other.address, USDC("5"));
+      expect(ok).to.equal(false);
+      expect(reason).to.equal("recipient not allowlisted");
+    });
+  });
+
+  describe("setPolicy validation", () => {
+    it("rejects setPolicy with dailyCap == 0", async () => {
+      const { vault, owner, agent } = await loadFixture(deployFixture);
+      const expiry = (await time.latest()) + 3600;
+      await expect(
+        vault.connect(owner).setPolicy(agent.address, USDC("5"), 0, USDC("50"), expiry, false)
+      ).to.be.revertedWithCustomError(vault, "ZeroDailyCap");
+    });
+
+    it("rejects setPolicy with maxPerCall > totalBudget", async () => {
+      const { vault, owner, agent } = await loadFixture(deployFixture);
+      const expiry = (await time.latest()) + 3600;
+      await expect(
+        vault.connect(owner).setPolicy(agent.address, USDC("20"), USDC("20"), USDC("10"), expiry, false)
+      ).to.be.revertedWithCustomError(vault, "MaxPerCallExceedsBudget");
+    });
+
+    it("rejects setPolicy with expiry in the past", async () => {
+      const { vault, owner, agent } = await loadFixture(deployFixture);
+      const past = (await time.latest()) - 1;
+      await expect(
+        vault.connect(owner).setPolicy(agent.address, USDC("5"), USDC("20"), USDC("50"), past, false)
+      ).to.be.revertedWithCustomError(vault, "ExpiryInPast");
+    });
+  });
+
+  describe("pause / unpause", () => {
+    it("owner can pause and unpause; non-owner cannot", async () => {
+      const { vault, owner, other } = await loadFixture(deployFixture);
+      await expect(vault.connect(other).pause()).to.be.revertedWithCustomError(vault, "OwnableUnauthorizedAccount");
+      await vault.connect(owner).pause();
+      await expect(vault.connect(other).unpause()).to.be.revertedWithCustomError(vault, "OwnableUnauthorizedAccount");
+      await vault.connect(owner).unpause();
+    });
+
+    it("pause blocks deposit + spend but withdraw always works", async () => {
+      const { vault, usdc, owner, agent, relayer, provider } = await loadFixture(deployFixture);
+      await setDefaultPolicy(vault, owner, agent);
+      await vault.connect(owner).pause();
+
+      // deposit
+      await usdc.mint(owner.address, USDC("10"));
+      await usdc.connect(owner).approve(await vault.getAddress(), USDC("10"));
+      await expect(vault.connect(owner).deposit(USDC("10"))).to.be.revertedWithCustomError(
+        vault, "EnforcedPause"
+      );
+
+      // withdraw stays available even while paused — users must be able to exit.
+      await expect(vault.connect(owner).withdraw(USDC("1"))).to.emit(vault, "Withdrawn");
+
+      // spend
+      const d = (await time.latest()) + 600;
+      const sig = await signSpend(vault, agent, owner.address, provider.address, USDC("5"), 0n, d);
+      await expect(
+        vault.connect(relayer).spend(owner.address, provider.address, USDC("5"), d, sig)
+      ).to.be.revertedWithCustomError(vault, "EnforcedPause");
+
+      // unpause restores normal operation
+      await vault.connect(owner).unpause();
+      await expect(vault.connect(owner).deposit(USDC("10"))).to.emit(vault, "Deposited");
+    });
+  });
+
+  // --- cleanupDailySpent -------------------------------------------------------
+  describe("cleanupDailySpent", () => {
+    it("clears a past day slot and reverts when trying to clear today", async () => {
+      const { vault, usdc, owner, agent, relayer, provider } = await loadFixture(deployFixture);
+      await setDefaultPolicy(vault, owner, agent);
+
+      // Spend once to write to dailySpent for today.
+      const d = (await time.latest()) + 600;
+      const sig = await signSpend(vault, agent, owner.address, provider.address, USDC("5"), 0n, d);
+      await vault.connect(relayer).spend(owner.address, provider.address, USDC("5"), d, sig);
+      const today = Math.floor((await time.latest()) / 86400);
+      expect(await vault.dailySpent(owner.address, today)).to.be.gt(0n);
+
+      // Move to next day.
+      await time.increase(86400);
+
+      // Clear yesterday's slot (now a past day).
+      await vault.cleanupDailySpent(owner.address, [today]);
+      expect(await vault.dailySpent(owner.address, today)).to.equal(0n);
+    });
+
+    it("reverts when trying to clear the current day", async () => {
+      const { vault, owner } = await loadFixture(deployFixture);
+      const today = Math.floor((await time.latest()) / 86400);
+      await expect(
+        vault.cleanupDailySpent(owner.address, [today])
+      ).to.be.revertedWithCustomError(vault, "CannotClearCurrentOrFutureDay");
     });
   });
 });

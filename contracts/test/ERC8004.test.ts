@@ -31,6 +31,31 @@ describe("ERC-8004 (vendored reference contracts)", () => {
     expect(await validation.getIdentityRegistry()).to.equal(identityRegistry);
   });
 
+  it("bootstraps proxies owned by the deployer with initializers consumed", async () => {
+    const [deployer] = await ethers.getSigners();
+    const { identityRegistry, reputationRegistry, validationRegistry } = await deployErc8004();
+
+    const identity = await ethers.getContractAt("IdentityRegistryUpgradeable", identityRegistry);
+    const reputation = await ethers.getContractAt("ReputationRegistryUpgradeable", reputationRegistry);
+    const validation = await ethers.getContractAt("ValidationRegistryUpgradeable", validationRegistry);
+
+    // Ownership carried over from the minimal-UUPS bootstrap to the real impls.
+    expect(await identity.owner()).to.equal(deployer.address);
+    expect(await reputation.owner()).to.equal(deployer.address);
+    expect(await validation.owner()).to.equal(deployer.address);
+
+    // The reinitializer(2) slot is consumed — initialize cannot be replayed.
+    await expect(identity.initialize()).to.be.revertedWithCustomError(
+      identity, "InvalidInitialization"
+    );
+    await expect(reputation.initialize(identityRegistry)).to.be.revertedWithCustomError(
+      reputation, "InvalidInitialization"
+    );
+    await expect(validation.initialize(identityRegistry)).to.be.revertedWithCustomError(
+      validation, "InvalidInitialization"
+    );
+  });
+
   it("registers an agent identity (ERC-721) with a token URI", async () => {
     const [provider] = await ethers.getSigners();
     const { identityRegistry } = await deployErc8004();
