@@ -42,6 +42,7 @@ import type {
   PaymentInfo,
   Balances
 } from './types.js'
+import { ChainPePaymentError } from './types.js'
 
 type Signer = Awaited<ReturnType<typeof createSigner>>
 
@@ -97,7 +98,7 @@ export class ChainPe {
       throw new Error('ChainPe: `privateKey` is required.')
     }
     this.privateKey = options.privateKey
-    this.network = options.network ?? 'fuji'
+    this.network = options.network ?? 'avalanche'
     this.registryAddress = resolveRegistryAddress(
       this.network,
       options.registryAddress
@@ -259,8 +260,16 @@ export class ChainPe {
     url: string,
     opts: FetchOptions
   ): Promise<{ result: PaidRequest; autoFeedback?: boolean }> {
-    const { autoFeedback, ...init } = opts
-    const initial = await fetch(url, init)
+    const { autoFeedback, timeout = 30_000, ...init } = opts
+
+    // Wraps fetch with an AbortController timeout so hung servers don't stall forever.
+    const fetchWithTimeout = (input: string, options: RequestInit) => {
+      const ctrl = new AbortController()
+      const timer = setTimeout(() => ctrl.abort(), timeout)
+      return fetch(input, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(timer))
+    }
+
+    const initial = await fetchWithTimeout(url, init)
     if (initial.status !== 402) {
       return { result: { response: initial }, autoFeedback }
     }
@@ -284,22 +293,29 @@ export class ChainPe {
       )
     }
 
-    const signer = await this.ensureSigner()
-    const header = await createPaymentHeader(
-      signer,
-      body.x402Version,
-      accept as unknown as PaymentRequirements
-    )
-    if (!header) throw new Error('x402: failed to generate payment header.')
+    let header: string | null
+    try {
+      const signer = await this.ensureSigner()
+      header = await createPaymentHeader(
+        signer,
+        body.x402Version,
+        accept as unknown as PaymentRequirements
+      )
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      throw new ChainPePaymentError(`x402: failed to sign payment — ${msg}`, { reason: msg })
+    }
+    if (!header) throw new ChainPePaymentError('x402: failed to generate payment header.')
 
     const retryHeaders = new Headers(init.headers)
     retryHeaders.set('X-PAYMENT', header)
-    const paid = await fetch(url, { ...init, headers: retryHeaders })
+    const paid = await fetchWithTimeout(url, { ...init, headers: retryHeaders })
 
     if (paid.status === 402) {
-      throw new Error(
+      throw new ChainPePaymentError(
         `x402: payment signed but the server could not settle (needs USDC on ${this.network}). ` +
-          `Attempted ${formatUnits(required, USDC_DECIMALS)} USDC → ${accept.payTo}.`
+          `Attempted ${formatUnits(required, USDC_DECIMALS)} USDC → ${accept.payTo}.`,
+        { reason: 'settlement_rejected' }
       )
     }
 

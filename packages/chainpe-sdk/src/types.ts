@@ -1,11 +1,33 @@
 /** Avalanche C-Chain network the SDK operates on. */
 export type ChainPeNetwork = 'fuji' | 'avalanche'
 
+/**
+ * Error thrown when an x402 payment fails on-chain (e.g. insufficient USDC,
+ * settlement revert). Provides `.txHash` and `.reason` for debugging.
+ */
+export class ChainPePaymentError extends Error {
+  readonly txHash?: string
+  readonly reason?: string
+
+  constructor(
+    message: string,
+    { txHash, reason }: { txHash?: string; reason?: string } = {}
+  ) {
+    super(message)
+    this.name = 'ChainPePaymentError'
+    this.txHash = txHash
+    this.reason = reason
+  }
+}
+
 /** Options for constructing a {@link ChainPe} client. */
 export interface ChainPeOptions {
   /** EOA private key (0x-prefixed or bare hex) used to sign payments + feedback. */
   privateKey: string
-  /** Avalanche network. Defaults to `'fuji'`. */
+  /**
+   * Avalanche network. Defaults to `'avalanche'` (mainnet).
+   * Pass `'fuji'` explicitly to target testnet.
+   */
   network?: ChainPeNetwork
   /** ChainPeRegistry address. Defaults to the deployed registry for the network. */
   registryAddress?: string
@@ -35,6 +57,11 @@ export interface ChainPeOptions {
 export interface FetchOptions extends RequestInit {
   /** Override the constructor `autoFeedback` for this call. */
   autoFeedback?: boolean
+  /**
+   * Request timeout in milliseconds. Aborts the fetch if the server does not
+   * respond within this window. Defaults to 30 000 ms (30 s).
+   */
+  timeout?: number
 }
 
 /** A resolved on-chain service registration. */

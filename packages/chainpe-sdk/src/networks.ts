@@ -32,13 +32,13 @@ const USDC_ADDRESS: Record<ChainPeNetwork, `0x${string}`> = {
 /** Deployed ChainPeRegistry per network (override via constructor/env). */
 const DEFAULT_REGISTRY: Record<ChainPeNetwork, `0x${string}` | undefined> = {
   fuji: '0x91677a35599f052E99Ed0ab9E45c17E736a22Bf6',
-  avalanche: undefined
+  avalanche: '0x2a589f1e4e3Cd0A3ee986cec5202aF3760E3170E'
 }
 
 /** Deployed ERC-8004 Reputation Registry per network. */
 const DEFAULT_REPUTATION: Record<ChainPeNetwork, `0x${string}` | undefined> = {
   fuji: '0x89476DfEf9c72a668fa5E86f154B73EDB053aFe4',
-  avalanche: undefined
+  avalanche: '0xfe7Df66e6BFbd3A76B68dF26b9312E6c85a38543'
 }
 
 const CHAINS = { fuji: avalancheFuji, avalanche } as const

@@ -15,7 +15,7 @@ npm install @chainpe/sdk
 ```ts
 import { ChainPe } from '@chainpe/sdk'
 
-const cp = new ChainPe({ privateKey: process.env.PRIVATE_KEY!, network: 'fuji' })
+const cp = new ChainPe({ privateKey: process.env.PRIVATE_KEY!, network: 'avalanche' })
 const res = await cp.fetch('https://api.example.com/paid') // auto-pays a 402
 const data = await res.json()
 ```
@@ -27,7 +27,7 @@ const data = await res.json()
 ## Discover + pay an agent (ranked by reputation)
 
 ```ts
-const cp = new ChainPe({ privateKey, network: 'fuji' })
+const cp = new ChainPe({ privateKey, network: 'avalanche' })
 
 // Ranked: scored services first, highest ⭐ first.
 const services = await cp.discover('summarize')
@@ -52,9 +52,9 @@ console.log(result.reputation)  // { agentId, score, txHash } when autoFeedback
 | option | default | purpose |
 |---|---|---|
 | `privateKey` | — (required) | EOA key that signs payments + feedback |
-| `network` | `'fuji'` | `'fuji'` or `'avalanche'` |
-| `registryAddress` | deployed default (Fuji) | ChainPeRegistry address |
-| `reputationRegistry` | deployed default (Fuji) | ERC-8004 Reputation Registry |
+| `network` | `'avalanche'` | `'avalanche'` or `'fuji'` |
+| `registryAddress` | deployed default (mainnet) | ChainPeRegistry address |
+| `reputationRegistry` | deployed default (mainnet) | ERC-8004 Reputation Registry |
 | `maxPerCall` | `'1'` | max USDC to auto-pay for one 402 |
 | `autoFeedback` | `false` | post positive feedback after a paid call |
 | `facilitatorUrl` | — | reserved for facilitator-routed flows |
@@ -77,12 +77,11 @@ Methods:
 `registryAddress` / `reputationRegistry` fall back to `CHAINPE_REGISTRY_ADDRESS`
 and `ERC8004_REPUTATION_REGISTRY` env vars, then the built-in deployed defaults.
 
-## Live on Avalanche Fuji
+## Live on Avalanche C-Chain
 
-Works out of the box against the deployed contracts (see `docs/DEPLOYMENTS.md`):
-ChainPeRegistry `0x91677a35599f052E99Ed0ab9E45c17E736a22Bf6`, ERC-8004 Reputation
-`0x89476DfEf9c72a668fa5E86f154B73EDB053aFe4`. Get test USDC at
-<https://faucet.circle.com> (select Avalanche Fuji).
+Works out of the box against the deployed mainnet contracts (see `docs/DEPLOYMENTS.md`):
+ChainPeRegistry `0x2a589f1e4e3Cd0A3ee986cec5202aF3760E3170E`, ERC-8004 Reputation
+`0xfe7Df66e6BFbd3A76B68dDF26b9312E6c85a38543`. USDC is available on major CEXes and bridges (e.g., [Stargate](https://stargate.finance)).
 
 Run the example:
 

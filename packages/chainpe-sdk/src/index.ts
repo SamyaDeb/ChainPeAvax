@@ -45,6 +45,7 @@ export {
   USDC_DECIMALS
 } from './networks.js'
 
+export { ChainPePaymentError } from './types.js'
 export type {
   ChainPeNetwork,
   ChainPeOptions,
