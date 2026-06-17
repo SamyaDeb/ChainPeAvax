@@ -12,6 +12,7 @@ import { PricingSection } from "@/components/landing/pricing-section";
 import { CtaSection } from "@/components/landing/cta-section";
 import { FooterSection } from "@/components/landing/footer-section";
 
+/** ChainPe Landing — deployed via Vercel */
 export default function Home() {
   return (
     <main className="relative min-h-screen overflow-x-hidden noise-overlay">
