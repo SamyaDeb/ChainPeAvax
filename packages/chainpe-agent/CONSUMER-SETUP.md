@@ -34,16 +34,16 @@ We recommend **Groq** for the free tier with fast inference:
 - Google AI: https://aistudio.google.com/app/apikey
 - Local Ollama: Install from https://ollama.com/
 
-### Step 3: Get testnet AVAX
+### Step 3: Get AVAX
 
-Your agent needs AVAX to pay for services:
+AVAX is available on major exchanges (Coinbase, Binance, Kraken, etc.).
 
 1. Generate a new Avalanche wallet OR use an existing one
-2. Visit the testnet faucet: https://faucet.avax.network/
-3. Paste your wallet address
-4. Click "Dispense" to receive 10 testnet AVAX
+2. Purchase AVAX on a major exchange and withdraw to your Avalanche C-Chain address
 
-**Need a new wallet?** You can generate one during the setup process or use any Avalanche wallet app.
+**Need a new wallet?** You can generate one during the setup process or use any Avalanche wallet app (Core, MetaMask with Avalanche network).
+
+> **Testnet:** For Fuji testnet development only, use the faucet: https://faucet.avax.network/
 
 ### Step 4: Initialize Your Agent
 
@@ -62,7 +62,7 @@ The interactive setup will guide you through:
 ✓ Wallet: IF2GKAR4...25NG6M
 ✓ Balance: 10 AVAX, 0 USDC
 ? Preferred Payment Token › AVAX
-? Network › testnet
+? Network › avalanche
 ```
 
 ### Step 5: Test Your Agent!
@@ -170,7 +170,7 @@ const agent = new ChainPeAgent({
   payment: {
     preferredToken: "AVAX"
   },
-  network: "testnet"
+  network: "avalanche"
 });
 
 const result = await agent.run("Get weather data");
@@ -221,7 +221,7 @@ services.forEach(service => {
   payment: {
     preferredToken: "AVAX" | "USDC"  // Payment preference
   },
-  network: "testnet" | "mainnet",    // Avalanche network
+  network: "avalanche" | "fuji",       // Avalanche network
   registryPath?: string               // Custom registry location
 }
 ```
@@ -354,7 +354,7 @@ console.log("\n✅ All tasks completed!");
    ```bash
    export CHAINPE_PRIVATE_KEY="your a 0x private key here"
    ```
-3. **Use testnet for development** - mainnet for production only
+3. **Use Fuji testnet for early testing** - confirm `network: "avalanche"` for production
 4. **Monitor wallet balance** to prevent unauthorized spending
 
 ### API Key Security
@@ -382,7 +382,7 @@ const agent = new ChainPeAgent({
   wallet: {
     private key: process.env.CHAINPE_PRIVATE_KEY!, // From env var
   },
-  network: "testnet"
+  network: "avalanche"
 });
 ```
 
@@ -401,7 +401,8 @@ const agent = new ChainPeAgent({
 - Verify it's an Avalanche wallet (not Ethereum, etc.)
 
 ### "Insufficient balance"
-- Get more testnet AVAX from https://faucet.avax.network/
+- Get AVAX from a major exchange (Coinbase, Binance, etc.) and bridge/send to Avalanche C-Chain
+- For Fuji testnet only: get test AVAX from https://faucet.avax.network/
 - Check balance: `chainpe-agent status`
 - Minimum 0.1 USDC recommended
 

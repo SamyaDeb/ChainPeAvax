@@ -22,7 +22,7 @@ npm install @chainpe/agent
 
 Before you start, you'll need:
 1. **LLM API Key** - Get a free Groq API key at https://console.groq.com/
-2. **testnet AVAX** - Fund your wallet at https://faucet.avax.network/
+2. **AVAX** - Available on major exchanges (Coinbase, Binance, Kraken, etc.)
 3. **Avalanche Wallet** - Generate a new wallet or use existing private key
 
 ### 1. Initialize Configuration
@@ -123,7 +123,7 @@ The agent stores config in `~/.chainpe/agent.json`:
   "payment": {
     "preferredToken": "AVAX"
   },
-  "network": "testnet"
+  "network": "avalanche"
 }
 ```
 
@@ -144,7 +144,7 @@ The agent stores config in `~/.chainpe/agent.json`:
   "payment": {
     "preferredToken": "AVAX"
   },
-  "network": "testnet"
+  "network": "avalanche"
 }
 ```
 
@@ -166,7 +166,7 @@ The agent stores config in `~/.chainpe/agent.json`:
   "payment": {
     "preferredToken": "AVAX"
   },
-  "network": "testnet"
+  "network": "avalanche"
 }
 ```
 
@@ -189,8 +189,7 @@ The agent stores config in `~/.chainpe/agent.json`:
 
 - Node.js >= 18
 - LLM API key (Groq recommended for free tier) OR local Ollama installation
-- Avalanche wallet with testnet AVAX
-- Get testnet AVAX: https://faucet.avax.network/
+- Avalanche wallet with AVAX (available on major exchanges)
 
 ## License
 

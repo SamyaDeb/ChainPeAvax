@@ -1,7 +1,7 @@
 {
-  "name": "@chainpe/agent",
+  "name": "@chainpeavax/agent",
   "version": "2.0.0",
-  "description": "ChainPe Agent SDK — Pre-built AI agent with x402 payment capabilities on Avalanche C-Chain",
+  "description": "ChainPe Agent SDK \u2014 Pre-built AI agent with x402 payment capabilities on Avalanche C-Chain",
   "type": "module",
   "bin": {
     "chainpe-agent": "./dist/cli.js"
@@ -31,7 +31,8 @@
     "build": "tsup",
     "dev": "tsx src/cli.ts",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "x402",
@@ -50,7 +51,7 @@
   ],
   "license": "MIT",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.70",
