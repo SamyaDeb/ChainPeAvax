@@ -1,4 +1,6 @@
-# @chainpe/cli
+# @chainpeavax/cli
+
+[![npm](https://img.shields.io/npm/v/@chainpeavax/cli.svg)](https://www.npmjs.com/package/@chainpeavax/cli)
 
 **Monetize any API with x402 micropayments on Avalanche**
 
@@ -7,7 +9,7 @@ ChainPe is a reverse proxy that sits in front of your HTTP API and enforces x402
 ## Installation
 
 ```bash
-npm install -g @chainpe/cli
+npm install -g @chainpeavax/cli
 ```
 
 ## Quick Start
@@ -106,7 +108,7 @@ Client Signs Payment → Proxy Verifies → Forwards to Your API
 ## Programmatic Usage
 
 ```typescript
-import { startProxyServer } from "@chainpe/cli";
+import { startProxyServer } from "@chainpeavax/cli";
 
 const handle = await startProxyServer({
   config: {

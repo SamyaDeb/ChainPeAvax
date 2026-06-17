@@ -14,6 +14,11 @@
 [![Hardhat Tests](https://img.shields.io/badge/contract%20tests-44%20passing-brightgreen.svg)](#testing)
 [![x402](https://img.shields.io/badge/protocol-x402-blue.svg)](https://x402.org)
 [![ERC-8004](https://img.shields.io/badge/standard-ERC--8004-purple.svg)](https://eips.ethereum.org/EIPS/eip-8004)
+<br/>
+[![@chainpeavax/sdk](https://img.shields.io/npm/v/@chainpeavax/sdk.svg?label=@chainpeavax/sdk)](https://www.npmjs.com/package/@chainpeavax/sdk)
+[![@chainpeavax/cli](https://img.shields.io/npm/v/@chainpeavax/cli.svg?label=@chainpeavax/cli)](https://www.npmjs.com/package/@chainpeavax/cli)
+[![@chainpeavax/ai-tools](https://img.shields.io/npm/v/@chainpeavax/ai-tools.svg?label=@chainpeavax/ai-tools)](https://www.npmjs.com/package/@chainpeavax/ai-tools)
+[![@chainpeavax/agent](https://img.shields.io/npm/v/@chainpeavax/agent.svg?label=@chainpeavax/agent)](https://www.npmjs.com/package/@chainpeavax/agent)
 
 **[Marketplace](https://chainpe.vercel.app/)** ·
 **[Indexer API](https://chainpe-indexer-production-f791.up.railway.app/services)** ·
@@ -194,6 +199,19 @@ DEPLOYER_PRIVATE_KEY=0x... node e2e/mainnet-real-usdc.mjs
 
 ---
 
+## 📦 Published NPM Packages
+
+ChainPe modules are published to NPM and ready for use in your projects:
+
+| Package | Description | Version |
+|---------|-------------|---------|
+| [`@chainpeavax/sdk`](https://www.npmjs.com/package/@chainpeavax/sdk) | Core SDK for payments, discovery, and PolicyVault. | [![npm](https://img.shields.io/npm/v/@chainpeavax/sdk.svg)](https://www.npmjs.com/package/@chainpeavax/sdk) |
+| [`@chainpeavax/ai-tools`](https://www.npmjs.com/package/@chainpeavax/ai-tools) | Vercel AI SDK and LangChain drop-in tools. | [![npm](https://img.shields.io/npm/v/@chainpeavax/ai-tools.svg)](https://www.npmjs.com/package/@chainpeavax/ai-tools) |
+| [`@chainpeavax/cli`](https://www.npmjs.com/package/@chainpeavax/cli) | Global CLI to host proxies, fetch, and discover. | [![npm](https://img.shields.io/npm/v/@chainpeavax/cli.svg)](https://www.npmjs.com/package/@chainpeavax/cli) |
+| [`@chainpeavax/agent`](https://www.npmjs.com/package/@chainpeavax/agent) | Standalone autonomous LLM agent execution loop. | [![npm](https://img.shields.io/npm/v/@chainpeavax/agent.svg)](https://www.npmjs.com/package/@chainpeavax/agent) |
+
+---
+
 ## Quick Start
 
 ### For Providers — Monetize Any API
@@ -307,6 +325,7 @@ Pay-per-request means thousands of tiny USDC payments with an agent waiting on t
 Full rationale + measured benchmarks: [`docs/WHY-AVALANCHE.md`](docs/WHY-AVALANCHE.md). Reproduce: [`examples/avalanche-bench`](examples/avalanche-bench).
 
 ---
+
 
 ## Testing
 

@@ -1,8 +1,10 @@
-# @chainpe/ai-tools
+# @chainpeavax/ai-tools
+
+[![npm](https://img.shields.io/npm/v/@chainpeavax/ai-tools.svg)](https://www.npmjs.com/package/@chainpeavax/ai-tools)
 
 **Drop-in ChainPe tools for AI agents** — let any Vercel AI SDK or LangChain agent
 **discover, pay for, and rate** HTTP APIs and other agents per request in USDC on
-Avalanche C-Chain. Thin adapters over [`@chainpe/sdk`](../chainpe-sdk).
+Avalanche C-Chain. Thin adapters over [`@chainpeavax/sdk`](../chainpe-sdk).
 
 Two tools per framework:
 
@@ -12,7 +14,7 @@ Two tools per framework:
   ranked by ERC-8004 reputation.
 
 ```bash
-npm install @chainpe/ai-tools @chainpe/sdk
+npm install @chainpeavax/ai-tools @chainpeavax/sdk
 # plus your framework: `ai` (Vercel AI SDK) or `@langchain/core`
 ```
 
@@ -21,7 +23,7 @@ npm install @chainpe/ai-tools @chainpe/sdk
 ```ts
 import { generateText, stepCountIs } from 'ai'
 import { anthropic } from '@ai-sdk/anthropic'
-import { createChainPeTools } from '@chainpe/ai-tools/vercel'
+import { createChainPeTools } from '@chainpeavax/ai-tools/vercel'
 
 const tools = createChainPeTools({
   privateKey: process.env.PRIVATE_KEY!,
@@ -42,7 +44,7 @@ const { text } = await generateText({
 ```ts
 import { ChatAnthropic } from '@langchain/anthropic'
 import { createReactAgent } from '@langchain/langgraph/prebuilt'
-import { createChainPeLangChainTools } from '@chainpe/ai-tools/langchain'
+import { createChainPeLangChainTools } from '@chainpeavax/ai-tools/langchain'
 
 const { chainpeFetchTool, discoverServiceTool } = createChainPeLangChainTools({
   privateKey: process.env.PRIVATE_KEY!,
@@ -64,7 +66,7 @@ options as [`new ChainPe(...)`](../chainpe-sdk#api) — `privateKey`, `network`,
 pre-built client via `{ client }`:
 
 ```ts
-import { ChainPe } from '@chainpe/sdk'
+import { ChainPe } from '@chainpeavax/sdk'
 const client = new ChainPe({ privateKey, network: 'avalanche' })
 const tools = createChainPeTools({ client })
 ```
@@ -75,7 +77,7 @@ The framework-agnostic core is exported from the package root, so you can wire t
 same logic into any tool-calling runtime:
 
 ```ts
-import { fetchInputSchema, runFetch, getClient } from '@chainpe/ai-tools'
+import { fetchInputSchema, runFetch, getClient } from '@chainpeavax/ai-tools'
 
 const client = getClient({ privateKey, network: 'avalanche' })
 const result = await runFetch(client, { url: 'https://api.example.com/paid' })
