@@ -13,7 +13,7 @@
 [![x402](https://img.shields.io/badge/protocol-x402-blue.svg)](https://x402.org)
 [![ERC-8004](https://img.shields.io/badge/standard-ERC--8004-purple.svg)](https://eips.ethereum.org/EIPS/eip-8004)
 
-**[Marketplace](https://chainpe-dashboard-production-dbd1.up.railway.app)** ·
+**[Marketplace](https://chainpe.vercel.app/)** ·
 **[Indexer API](https://chainpe-indexer-production-f791.up.railway.app/services)** ·
 **[Facilitator](https://chainpe-facilitator-production-000a.up.railway.app/health)** ·
 **[Registry on Snowtrace](https://snowtrace.io/address/0x2a589f1e4e3Cd0A3ee986cec5202aF3760E3170E#code)**
@@ -155,7 +155,7 @@ All contracts deployed to **Avalanche C-Chain (chainId 43114)** on 2026-06-17.
 
 | Service | URL | Stack |
 |---|---|---|
-| **Marketplace dashboard** | https://chainpe-dashboard-production-dbd1.up.railway.app | Next.js — Railway |
+| **Marketplace dashboard** | https://chainpe.vercel.app/ | Next.js — Vercel |
 | **Indexer API** | https://chainpe-indexer-production-f791.up.railway.app | Node.js + Postgres — Railway |
 | **Facilitator** | https://chainpe-facilitator-production-000a.up.railway.app | Node.js — Railway |
 
