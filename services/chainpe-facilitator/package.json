@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "ChainPe x402 facilitator — non-custodial verify + settle service for USDC payments on Avalanche",
+  "description": "ChainPe x402 facilitator \u2014 non-custodial verify + settle service for USDC payments on Avalanche",
   "main": "dist/server.js",
   "scripts": {
     "build": "tsup src/server.ts --format esm --target node18 --clean",
@@ -16,6 +16,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "pino": "^9.6.0",
     "viem": "^2.21.0",
     "x402": "^1.2.0"
   },
@@ -29,6 +31,6 @@
     "vitest": "^3.2.1"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18"
   }
 }

@@ -8,7 +8,7 @@ pays settlement gas and relays the payer's signed authorization.
 
 - A dedicated EOA as the **gas key** (`FACILITATOR_PRIVATE_KEY`). Do **not** reuse
   a key that holds user funds.
-- Fund it with **AVAX** for gas (Fuji faucet: <https://faucet.avax.network>). Each
+- Fund it with **AVAX** for gas (available on major exchanges; Fuji testnet faucet: <https://faucet.avax.network>). Each
   settlement costs a small amount of AVAX; top up as needed (watch `/status`).
 
 ## Deploy to Railway
@@ -23,7 +23,7 @@ cd services/chainpe-facilitator
 railway init                       # create/link a project
 railway variables \
   --set FACILITATOR_PRIVATE_KEY=0x... \
-  --set NETWORK=fuji
+  --set NETWORK=avalanche
 railway up                         # build + deploy
 railway domain                     # mint a public https URL
 ```
@@ -32,14 +32,14 @@ railway domain                     # mint a public https URL
 
 1. New Project → Deploy from GitHub repo → set **Root Directory** to
    `services/chainpe-facilitator`.
-2. Variables: `FACILITATOR_PRIVATE_KEY`, `NETWORK=fuji` (optionally `RPC_URL`).
+2. Variables: `FACILITATOR_PRIVATE_KEY`, `NETWORK=avalanche` (optionally `RPC_URL`).
 3. Networking → **Generate Domain**.
 
 ## Verify
 
 ```bash
 curl https://<your-domain>/health      # { status: "ok", custodial: false, ... }
-curl https://<your-domain>/supported   # exact / avalanche-fuji
+curl https://<your-domain>/supported   # exact / avalanche
 curl https://<your-domain>/status      # gasBalanceAvax + lowGas flag
 ```
 

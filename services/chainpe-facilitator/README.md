@@ -50,6 +50,6 @@ gas. A `Dockerfile` is also provided for other platforms.
 | Var | Default | Notes |
 |---|---|---|
 | `FACILITATOR_PRIVATE_KEY` | — | required; gas-paying settlement key |
-| `NETWORK` | `fuji` | `fuji` or `avalanche` |
+| `NETWORK` | `avalanche` | `avalanche` or `fuji` |
 | `RPC_URL` | public RPC | optional override |
 | `PORT` | `4500` | Railway injects this |
