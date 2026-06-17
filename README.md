@@ -279,37 +279,6 @@ Claude gets 9 tools: `search_bazaar`, `x402_fetch`, `pay`, `transfer_usdc`, `tra
 
 ---
 
-## PolicyVault — Gasless On-Chain Spending Caps
-
-`PolicyVault.sol` lets an owner pre-fund a vault and grant a session key with enforceable limits:
-
-```ts
-import { PolicyVaultClient } from '@chainpeavax/sdk'
-
-// Owner sets policy (on-chain, enforced by Avalanche)
-const vault = new PolicyVaultClient({ privateKey: ownerKey, network: 'avalanche', vaultAddress })
-await vault.deposit('10')           // fund with 10 USDC
-await vault.setPolicy({
-  sessionKey: agentAddress,
-  maxPerCall: '0.50',               // Avalanche rejects anything over this
-  dailyCap: '5.00',
-  totalBudget: '10.00',
-  expiry: Date.now() / 1000 + 86400
-})
-
-// Agent signs spends (no gas, no AVAX needed)
-const agentVault = new PolicyVaultClient({ privateKey: agentKey, network: 'avalanche', vaultAddress })
-const auth = await agentVault.signSpend({ owner: ownerAddress, to: recipient, amount: '0.25' })
-
-// Relayer submits (pays gas)
-const relayerVault = new PolicyVaultClient({ privateKey: relayerKey, network: 'avalanche', vaultAddress })
-await relayerVault.relaySpend(auth)
-```
-
-An agent that tries to exceed `maxPerCall` gets a **chain revert** — not a backend error. The session key can be revoked instantly by the owner.
-
----
-
 ## Cross-L1 Payments via ICM
 
 `ChainPeICMSender` (on L1-A) and `ChainPeICMReceiver` (on L1-B) use Avalanche Interchain Messaging (Teleporter) to route payment intents cross-L1 without bridges.
@@ -336,70 +305,6 @@ Pay-per-request means thousands of tiny USDC payments with an agent waiting on t
 | EVM compatibility | Solidity 0.8, full tooling (Hardhat, Foundry, ethers, viem) |
 
 Full rationale + measured benchmarks: [`docs/WHY-AVALANCHE.md`](docs/WHY-AVALANCHE.md). Reproduce: [`examples/avalanche-bench`](examples/avalanche-bench).
-
----
-
-## What's in the Repo
-
-| Path | Package / service | What it does |
-|---|---|---|
-| `packages/chainpe-sdk` | `@chainpeavax/sdk` | Core: `cp.fetch`, `cp.discover`, `cp.pay`, reputation, PolicyVault client |
-| `packages/chainpe-ai-tools` | `@chainpeavax/ai-tools` | Drop-in Vercel AI SDK + LangChain tools (`chainpeFetch`, `discoverService`) |
-| `packages/chainpe` | `@chainpeavax/cli` | `chainpe init / start / register / fetch / discover` |
-| `packages/chainpe-wallet` | `chainpe-wallet-mcp` | MCP extension — Claude gets a native Avalanche wallet (9 tools) |
-| `packages/chainpe-agent` | `@chainpeavax/agent` | Standalone LLM agent loop: discovers + pays autonomously |
-| `services/chainpe-facilitator` | hosted on Railway | Non-custodial x402 `verify` + `settle`; submits EIP-3009 txs, pays gas |
-| `services/chainpe-indexer` | hosted on Railway | Watches `ChainPeRegistry` events → Postgres → O(1) REST API |
-| `apps/dashboard` | hosted on Railway | Next.js marketplace — browse reputation-ranked services |
-| `contracts` | Hardhat | Registry, ERC-8004, PolicyVault, ICM — 44 tests |
-| `examples/seller-agents` | — | 4 LLM-backed seller agents + buyer orchestrator showing A2A payment |
-| `examples/policy-vault` | — | PolicyVault gasless spending demo |
-| `examples/avalanche-bench` | — | Reproducible latency + fee benchmark vs. other chains |
-| `e2e` | — | Full E2E suites: Fuji (`run.mjs`) and mainnet real-USDC (`mainnet-real-usdc.mjs`) |
-
-<details>
-<summary><b>Full repo layout</b></summary>
-
-```
-chainpe/
-├── contracts/                   # Hardhat — Solidity contracts + 44 tests
-│   ├── contracts/
-│   │   ├── ChainPeRegistry.sol
-│   │   ├── PolicyVault.sol
-│   │   ├── erc8004/             # IdentityRegistry, ReputationRegistry, ValidationRegistry
-│   │   └── icm/                 # ChainPeICMSender, ChainPeICMReceiver
-│   ├── scripts/                 # deploy, transfer-ownership, configure-icm, verify
-│   └── test/                    # 44 Hardhat tests
-├── packages/
-│   ├── chainpe-sdk/             # @chainpeavax/sdk
-│   ├── chainpe-ai-tools/        # @chainpeavax/ai-tools
-│   ├── chainpe/                 # @chainpeavax/cli
-│   ├── chainpe-wallet/          # chainpe-wallet-mcp (Claude MCP)
-│   └── chainpe-agent/           # @chainpeavax/agent
-├── services/
-│   ├── chainpe-facilitator/     # x402 verify/settle service
-│   └── chainpe-indexer/         # events → Postgres → REST API
-├── apps/
-│   ├── dashboard/               # Next.js marketplace
-│   └── landing/                 # Static landing page
-├── examples/
-│   ├── seller-agents/           # A2A: 4 seller agents + buyer orchestrator
-│   ├── weather-api/             # Zero-dependency weather backend
-│   ├── weather-railway/         # Railway-deployable weather backend
-│   ├── proxy-railway/           # Railway-deployable x402 proxy
-│   ├── policy-vault/            # Gasless spending demo
-│   ├── avalanche-bench/         # Latency + fee benchmark
-│   └── agent-surfaces/          # Same payment from SDK / CLI / MCP / LangChain
-├── e2e/
-│   ├── run.mjs                  # Fuji testnet full E2E (7 flows)
-│   └── mainnet-real-usdc.mjs    # Mainnet real-USDC E2E (17 checks, all passing)
-└── docs/
-    ├── CHANGELOG.md
-    ├── DEPLOYMENTS.md
-    ├── STRUCTURE.md
-    └── WHY-AVALANCHE.md
-```
-</details>
 
 ---
 
