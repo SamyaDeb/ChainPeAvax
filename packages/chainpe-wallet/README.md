@@ -28,7 +28,7 @@ Other tools: `check_balance`, `pay`, `transfer_usdc`, `transfer_avax`,
 wallet automatically posts a positive on-chain score for the provider's agent.
 `search_bazaar` surfaces each provider's aggregate score (read from the
 Reputation Registry), and `give_feedback` lets you score a provider manually.
-Set `ERC8004_REPUTATION_REGISTRY` (defaults to the deployed Fuji registry).
+Set `ERC8004_REPUTATION_REGISTRY` (defaults to the deployed mainnet registry).
 
 ## Configuration
 
@@ -37,7 +37,7 @@ Set via the Claude Desktop config form (or env vars when run directly):
 | Field | Env var | Default |
 |---|---|---|
 | Avalanche private key (0x…) | `CHAINPE_PRIVATE_KEY` | — (read-only if unset) |
-| Network (`avalanche` / `fuji`) | `NETWORK` | `fuji` |
+| Network (`avalanche` / `fuji`) | `NETWORK` | `avalanche` |
 | Max USDC per payment | `MAX_PER_CALL` | `0.10` |
 | Max USDC per day | `MAX_PER_DAY` | `20.00` |
 | ChainPe registry app id | `CHAINPE_REGISTRY_APP_ID` | `<CHAINPE_REGISTRY_ADDRESS>` |
@@ -55,4 +55,4 @@ npm test             # vitest
 
 Run `dist/index.js` over stdio. For a quick check you can connect with the MCP
 SDK client (`@modelcontextprotocol/sdk/client`) or the MCP Inspector and call
-`search_bazaar` to read the live testnet registry.
+`search_bazaar` to read the live mainnet registry.

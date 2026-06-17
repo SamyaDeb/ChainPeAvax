@@ -10,7 +10,7 @@ app" proof: one payment + reputation core, many surfaces.
 | LangChain (ReAct) | `langchain-agent.ts` | `@chainpe/ai-tools/langchain` |
 | CLI (curl-level) | `chainpe fetch <url>` | `@chainpe/cli` → `@chainpe/sdk` |
 
-All three settle USDC on Avalanche Fuji through the same `@chainpe/sdk` core.
+All three settle USDC on Avalanche C-Chain through the same `@chainpe/sdk` core.
 
 ## Setup
 
@@ -22,8 +22,7 @@ npm install              # links the local @chainpe/* packages (build them first
 > Build the workspace packages once from the repo root so the `file:` links
 > resolve: `npm install && npm run build`.
 
-The paying wallet needs a little Fuji USDC (<https://faucet.circle.com> → Avalanche
-Fuji). Gas is paid by the provider's facilitator.
+The paying wallet needs a little USDC on Avalanche C-Chain (available on major CEXes or bridges, e.g. [Stargate](https://stargate.finance)). Gas is paid by the provider's facilitator.
 
 ## Run
 

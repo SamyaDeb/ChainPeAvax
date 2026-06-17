@@ -10,11 +10,11 @@ inside a live request/response loop**. Avalanche C-Chain delivers both.
 
 Run it yourself: `node examples/avalanche-bench/bench.mjs` (read-only, no funds).
 
-| Metric | Avalanche Fuji (measured) |
+| Metric | Avalanche C-Chain (mainnet, measured) |
 |---|---|
 | Avg block time | **~3.0 s** (last 30 blocks) |
 | Finality | **~1–2 s, deterministic — no reorgs** (Snowman consensus) |
-| Live gas price | ~0 (testnet); see projection below |
+| Live gas price | ~25 gwei base fee (post-Etna/ACP-125); see fee table below |
 
 Finality matters more than block time here: Avalanche reaches **irreversible**
 finality in a second or two with no probabilistic re-org window, so a facilitator
@@ -40,15 +40,15 @@ the env vars on the script.)
 
 ## How ChainPe leans into Avalanche specifically
 
-- **Native USDC + EIP-3009.** Circle-issued USDC on Avalanche (Fuji
-  `0x5425…1Bc65`, mainnet `0xB97E…8a6E`) with `transferWithAuthorization` is what
+- **Native USDC + EIP-3009.** Circle-issued USDC on Avalanche C-Chain
+  (`0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E`) with `transferWithAuthorization` is what
   makes the x402 *exact* scheme work — the payer signs, the facilitator submits.
 - **Agents hold zero AVAX.** The non-custodial facilitator pays gas and relays the
   payer's signed authorization; PolicyVault spends are relayer-submitted too. Cheap
   Avalanche gas makes "the platform eats the gas" sustainable — agents only need
   USDC.
-- **x402 network ids** `avalanche-fuji` / `avalanche` are first-class in the
-  Coinbase x402 stack ChainPe builds on.
+- **x402 network ids** `avalanche` (mainnet) / `avalanche-fuji` (testnet) are first-class in the
+  Coinbase x402 stack ChainPe builds on. ChainPe targets `avalanche` by default.
 - **On-chain reputation in the hot path.** Because fees + finality are low, leaving
   ERC-8004 feedback after *every* paid call (and reading it during discovery) is
   practical — reputation accrues continuously instead of being too expensive to bother.
@@ -76,7 +76,7 @@ L1), so these deploy as-is. Covered by `contracts/test/ChainPeICM.test.ts`
 (a `MockTeleporterMessenger` simulates relayer delivery; 3 tests).
 
 ```bash
-cd contracts && npm run deploy:icm:fuji   # receiver on dest L1, sender on source L1
+cd contracts && npm run deploy:icm:avalanche   # receiver on dest L1, sender on source L1
 ```
 
 This is why **deterministic finality** matters again: ICM message verification
@@ -85,7 +85,7 @@ relies on the source L1's finalized state, which Avalanche provides in ~1–2s.
 ## Reproduce
 
 ```bash
-node examples/avalanche-bench/bench.mjs                 # Fuji, defaults
-GAS_PRICE_GWEI=2 AVAX_USD=45 node examples/avalanche-bench/bench.mjs
-CHAINPE_NETWORK=avalanche node examples/avalanche-bench/bench.mjs
+node examples/avalanche-bench/bench.mjs                   # mainnet, defaults
+GAS_PRICE_GWEI=25 AVAX_USD=45 node examples/avalanche-bench/bench.mjs
+CHAINPE_NETWORK=fuji node examples/avalanche-bench/bench.mjs  # opt-in for Fuji testnet
 ```

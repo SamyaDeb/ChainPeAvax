@@ -3,7 +3,7 @@
 An owner sets **on-chain spending limits**; their agent spends **gaslessly**
 within them; the **chain blocks an overspend**. Built on `PolicyVault`
 (`contracts/contracts/PolicyVault.sol`) + the `@chainpe/sdk` `PolicyVaultClient`
-— the non-4337 path (BUILD-PLAN §4.7).
+— a non-4337 approach to gasless agent spending.
 
 ```
 owner ──deposit USDC + setPolicy(sessionKey, caps)──▶ PolicyVault
@@ -24,7 +24,7 @@ agent (session key) ──signs spend (EIP-712, no gas)──▶ relayer ──s
 
 ```bash
 # 1. Deploy a vault (once)
-cd ../../contracts && npm run deploy:policyvault:fuji   # → VAULT_ADDRESS
+cd ../../contracts && npm run deploy:policyvault   # → VAULT_ADDRESS
 
 # 2. Configure + run the demo
 cd ../examples/policy-vault
