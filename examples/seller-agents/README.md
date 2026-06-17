@@ -44,26 +44,19 @@ npm install               # links the local @chainpe/* packages
 You need **three distinct wallets**: the buyer (`CHAINPE_PRIVATE_KEY`) and one per
 seller (`RESEARCH_PAYTO*`, `DIGEST_PAYTO*`). ERC-8004 blocks self-feedback, so the
 buyer must differ from the sellers for reputation to accrue. Fund the buyer with
-Fuji USDC (<https://faucet.circle.com>) and the facilitator/seller gas wallets
-with a little AVAX (<https://faucet.avax.network>).
+USDC on Avalanche C-Chain (available on major CEXes or bridges) and the facilitator/seller gas wallets
+with a little AVAX (available on major exchanges; for Fuji testnet use <https://faucet.avax.network>).
 
-## 1. Mint a reputation identity per seller (one-time)
-
-```bash
-SELLER_KEY=$RESEARCH_PAYTO_KEY node mint-identity.mjs   # prints RESEARCH_AGENT_ID
-SELLER_KEY=$DIGEST_PAYTO_KEY   node mint-identity.mjs   # prints DIGEST_AGENT_ID
-```
-
-Paste the two ids into `.env` (`RESEARCH_AGENT_ID`, `DIGEST_AGENT_ID`).
-
-## 2. Launch the sellers + register them
+## 1. Launch the sellers + register them
 
 ```bash
 REGISTER=1 ./launch.sh
 ```
 
-This starts both sellers, waits for health, and registers each on-chain (pays the
-USDC registration fee + links its `agentId`). Leave it running.
+This starts both sellers, waits for health, then runs `register-seller.mjs` for
+each. Registration now **automatically mints an ERC-8004 identity** for each
+seller wallet if one doesn't exist yet — no separate step needed. The printed
+`agentId` is the token that accrues reputation on each paid call. Leave it running.
 
 ## 3. Run the buyer
 

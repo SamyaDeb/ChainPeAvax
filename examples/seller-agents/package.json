@@ -8,6 +8,13 @@
     "research": "node research-agent.mjs",
     "digest": "node news-digest-agent.mjs",
     "orchestrate": "node orchestrator.mjs",
+    "price": "node avax-price-agent.mjs",
+    "news": "node avax-news-agent.mjs",
+    "analysis": "node avax-analysis-agent.mjs",
+    "dex": "node avax-dex-agent.mjs",
+    "invest": "node investment-orchestrator.mjs",
+    "invest:sim": "node investment-orchestrator.mjs --sim",
+    "invest:cycles": "node investment-orchestrator.mjs --cycles 3",
     "mint": "node mint-identity.mjs",
     "register": "node register-seller.mjs"
   },
