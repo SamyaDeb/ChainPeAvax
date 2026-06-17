@@ -22,18 +22,20 @@ const AVALANCHE_RPC_URL =
 // work without any secrets configured.
 const accounts = DEPLOYER_PRIVATE_KEY ? [DEPLOYER_PRIVATE_KEY] : [];
 
+// When MAINNET_FORK=true, the default hardhat network forks Avalanche mainnet.
+const MAINNET_FORK = process.env.MAINNET_FORK === "true";
+const FORK_BLOCK   = parseInt(process.env.FORK_BLOCK ?? "88232363", 10);
+
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.28",
     settings: {
-      optimizer: { enabled: true, runs: 200 },
+      optimizer: { enabled: true, runs: 1000 },
       viaIR: true,
     },
   },
   networks: {
-    hardhat: {
-      chainId: 31337,
-    },
+    hardhat: { chainId: 31337, hardfork: "cancun" },
     fuji: {
       url: FUJI_RPC_URL,
       chainId: 43113,
