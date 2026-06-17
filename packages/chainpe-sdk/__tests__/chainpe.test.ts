@@ -16,29 +16,23 @@ describe('ChainPe construction', () => {
     expect(() => new ChainPe({})).toThrow(/privateKey/)
   })
 
-  it('derives the wallet address and defaults to Fuji', () => {
+  it('derives the wallet address and defaults to Avalanche', () => {
     const cp = new ChainPe({ privateKey: TEST_KEY })
     expect(cp.getAddress().toLowerCase()).toBe(TEST_ADDR.toLowerCase())
-    expect(cp.network).toBe('fuji')
-    // Built-in Fuji registry defaults (checksummed).
+    expect(cp.network).toBe('avalanche')
+    // Built-in Avalanche registry defaults (checksummed).
     expect(cp.registryAddress).toBe(
-      '0x91677a35599f052E99Ed0ab9E45c17E736a22Bf6'
+      '0x2a589f1e4e3Cd0A3ee986cec5202aF3760E3170E'
     )
     expect(cp.reputationRegistry).toBe(
-      '0x89476DfEf9c72a668fa5E86f154B73EDB053aFe4'
+      '0xfe7Df66e6BFbd3A76B68dF26b9312E6c85a38543'
     )
   })
 
   it('echoes config including maxPerCall default of 1 USDC', () => {
     const cp = new ChainPe({ privateKey: TEST_KEY })
     expect(cp.config.maxPerCall).toBe('1')
-    expect(cp.config.network).toBe('fuji')
-  })
-
-  it('throws on mainnet without a registry override (no default deployed)', () => {
-    expect(() => new ChainPe({ privateKey: TEST_KEY, network: 'avalanche' })).toThrow(
-      /registry address/i
-    )
+    expect(cp.config.network).toBe('avalanche')
   })
 })
 
@@ -84,7 +78,7 @@ describe('ChainPe.fetch / pay', () => {
         )
       )
     )
-    const cp = new ChainPe({ privateKey: TEST_KEY, maxPerCall: '1' })
+    const cp = new ChainPe({ privateKey: TEST_KEY, network: 'fuji', maxPerCall: '1' })
     await expect(cp.fetch('https://api.example.com/paid')).rejects.toThrow(
       /exceeds maxPerCall/
     )
@@ -103,7 +97,7 @@ describe('ChainPe.fetch / pay', () => {
         )
       )
     )
-    const cp = new ChainPe({ privateKey: TEST_KEY })
+    const cp = new ChainPe({ privateKey: TEST_KEY, network: 'fuji' })
     await expect(cp.fetch('https://api.example.com/paid')).rejects.toThrow(
       /wallet is on fuji/
     )
