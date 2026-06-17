@@ -82,6 +82,17 @@ export function createProxyServer(options: ProxyServerOptions): Express {
       tags: config.tags,
     });
   });
+  // Pass-through: fetch /schema from the backend so agents can self-describe
+  // their routes without going through the payment gate.
+  adminRouter.get("/schema", async (_req: Request, res: Response) => {
+    try {
+      const r = await fetch(`${config.targetUrl}/schema`);
+      if (!r.ok) { res.status(404).json({ error: "Agent has no /schema endpoint" }); return; }
+      res.json(await r.json());
+    } catch {
+      res.status(503).json({ error: "Backend unreachable" });
+    }
+  });
   app.use("/chainpe-admin", adminRouter);
 
   // Resolve the facilitator. Local mode mounts an in-process facilitator and

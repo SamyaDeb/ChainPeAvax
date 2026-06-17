@@ -45,7 +45,7 @@ The interactive setup will ask:
 ? Payment Token › AVAX
 ? Your Wallet Address › EZDWPOTBKBWCBQ4M6QXWF4Z3PJB5Q6XN6XA...
 ? Proxy Port › 4402
-? Network › testnet
+? Network › avalanche
 ```
 
 This creates `~/.chainpe/config.json`
@@ -102,7 +102,7 @@ Configuration:
   Target:   http://localhost:3001
   Price:    0.05 AVAX
   Wallet:   EZDWPOTB...57A4
-  Network:  testnet
+  Network:  avalanche
 
 ✓ ChainPe proxy started
   Listening on: http://localhost:4402
@@ -169,7 +169,7 @@ Agent Request → x402 Proxy (port 4402) → Check Payment
   "paymentToken": "AVAX",
   "walletAddress": "YOUR_WALLET_ADDRESS_HERE",
   "proxyPort": 4402,
-  "network": "testnet",
+  "network": "avalanche",
   "logLevel": "normal"
 }
 ```
@@ -186,7 +186,7 @@ Agent Request → x402 Proxy (port 4402) → Check Payment
 | `paymentToken` | Payment currency | "AVAX" or "USDC" |
 | `walletAddress` | Your receiving address | "EZDW..." |
 | `proxyPort` | x402 proxy port | 4402 |
-| `network` | Avalanche network | "testnet" or "mainnet" |
+| `network` | Avalanche network | "avalanche" or "fuji" |
 | `logLevel` | Log verbosity | "normal" or "verbose" |
 
 ---
@@ -359,7 +359,7 @@ Every API call costs 0.05 AVAX
 
 ```bash
 # Check your wallet on Avalanche explorer
-open "https://testnet.snowtrace.io/address/YOUR_ADDRESS"
+open "https://snowtrace.io/address/YOUR_ADDRESS"
 ```
 
 ### Track Transactions
@@ -374,8 +374,8 @@ The proxy logs all successful payments:
 ### View in Explorer
 
 All payments land directly in your wallet on-chain. View them at:
-- Testnet: https://testnet.snowtrace.io/
 - Mainnet: https://snowtrace.io/
+- Testnet (Fuji): https://testnet.snowtrace.io/ (for testing only)
 
 ---
 
@@ -402,8 +402,8 @@ All payments land directly in your wallet on-chain. View them at:
 
 ### Checklist
 
-- [ ] Test on testnet thoroughly
-- [ ] Switch `network` to `avalanche` in config
+- [ ] Test on a Fuji fork or local testnet (set `network` to `fuji` for testing)
+- [ ] Confirm `network` is `avalanche` in config for mainnet
 - [ ] Use a mainnet wallet address
 - [ ] Set appropriate pricing
 - [ ] Configure HTTPS/SSL
@@ -453,7 +453,7 @@ WantedBy=multi-user.target
 - Or stop the process using the port: `lsof -ti:4402 | xargs kill`
 
 ### "Transaction verification failed"
-- Check network is correct (testnet vs mainnet)
+- Check network is correct (`fuji` for testnet, `avalanche` for mainnet)
 - Verify wallet address is correct
 - Ensure agent has sufficient AVAX
 

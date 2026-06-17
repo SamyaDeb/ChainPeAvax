@@ -17,6 +17,7 @@ import { privateKeyToAccount } from "viem/accounts";
 
 import type { ChainPeConfig, ChainPeNetwork } from "./types.js";
 import { isValidAddress, getAccountBalances, formatUsdc, formatAvax } from "./evm.js";
+import { resolveIdentityRegistry, mintAgentIdentity, hasIdentity } from "./erc8004.js";
 import { explorerTxUrl } from "./chains.js";
 import { startProxyServer } from "./proxy/index.js";
 import { setLogLevel } from "./logger.js";
@@ -286,16 +287,6 @@ async function runRegister(): Promise<void> {
   }
 
   const endpoint = (await prompt(p.text({ message: "Public endpoint URL (where clients connect)", placeholder: `http://localhost:${config.proxyPort}`, initialValue: `http://localhost:${config.proxyPort}`, validate: validateUrl }))) as string;
-  const agentIdInput = (await prompt(p.text({ message: "ERC-8004 agent id (optional, blank = none)", placeholder: "0", defaultValue: "" }))) as string;
-  const agentId = agentIdInput.trim() || "0";
-
-  // Persist the agentId so `chainpe start` can advertise it on 402 responses.
-  const persistAgentId = async (): Promise<void> => {
-    if (agentId !== "0" && config.agentId !== agentId) {
-      config.agentId = agentId;
-      await saveConfig(config).catch(() => {});
-    }
-  };
 
   const alreadyExists = await registryClient.hasService(config.walletAddress, config.serviceName);
   const isUpdate = alreadyExists;
@@ -320,12 +311,20 @@ async function runRegister(): Promise<void> {
       message: "How would you like to sign the registration transaction?",
       options: [
         { value: "browser", label: "Browser wallet (MetaMask / Core)", hint: "recommended — confirm in your browser" },
-        { value: "key", label: "Paste private key", hint: "signs directly in the terminal" },
+        { value: "key", label: "Paste private key", hint: "signs directly in the terminal (auto-mints ERC-8004 identity)" },
       ],
     })
   );
 
   if (signMethod === "browser") {
+    // Browser flow: reuse an existing agentId from config if available (can't auto-mint in browser).
+    const agentId = config.agentId ?? "0";
+    if (agentId !== "0") {
+      console.log(chalk.gray(`  ℹ Linking to existing ERC-8004 identity #${agentId} (from saved config).`));
+    } else {
+      console.log(chalk.yellow("  ℹ No ERC-8004 identity set. Service will register without reputation."));
+      console.log(chalk.gray("    Run `chainpe register` with a private key to auto-mint one."));
+    }
     console.log();
     console.log(
       chalk.gray(
@@ -346,7 +345,6 @@ async function runRegister(): Promise<void> {
       isUpdate,
     });
     if (result.success && result.txnHash) {
-      await persistAgentId();
       console.log();
       console.log(chalk.green(`  ✓ ${isUpdate ? "Service updated" : "Service registered"} on-chain!`));
       console.log(chalk.gray(`    Tx: ${chalk.cyan(result.txnHash)}`));
@@ -360,10 +358,48 @@ async function runRegister(): Promise<void> {
     return;
   }
 
-  // Fallback: sign in the terminal with a pasted private key.
+  // Private key flow: auto-mint an ERC-8004 identity if the wallet doesn't have one yet.
   const privateKey = (await prompt(
     p.password({ message: "Enter your wallet private key (0x…, signs the transaction)", validate: validatePrivateKey })
   )) as string;
+
+  // ── ERC-8004 identity ────────────────────────────────────────────────────
+  let agentId = config.agentId ?? "0";
+  const identityRegistry = resolveIdentityRegistry(config.network, process.env.ERC8004_IDENTITY_REGISTRY);
+
+  if (agentId !== "0") {
+    console.log(chalk.gray(`  ℹ Reusing existing ERC-8004 identity #${agentId}.`));
+  } else if (identityRegistry) {
+    // Check whether this wallet already has an identity (e.g. minted on another machine).
+    const alreadyHasId = await hasIdentity({
+      network: config.network,
+      identityRegistry,
+      ownerAddress: config.walletAddress,
+    });
+    if (alreadyHasId) {
+      console.log(chalk.yellow("  ℹ Wallet already has an ERC-8004 identity. Pass --agent-id <n> to link it, or re-run after noting the id."));
+    } else {
+      const mintSpinner = ora("Minting ERC-8004 reputation identity…").start();
+      try {
+        const { agentId: newId, txHash } = await mintAgentIdentity({
+          network: config.network,
+          privateKey,
+          identityRegistry,
+        });
+        agentId = newId;
+        config.agentId = newId;
+        await saveConfig(config).catch(() => {});
+        mintSpinner.succeed(`ERC-8004 identity minted! Agent #${newId}`);
+        console.log(chalk.gray(`    Tx: ${chalk.cyan(explorerTxUrl(config.network, txHash))}`));
+      } catch (err) {
+        mintSpinner.warn(`Could not mint ERC-8004 identity: ${(err as Error).message}`);
+        console.log(chalk.gray("    Registering without reputation. You can mint manually with mint-identity.mjs."));
+      }
+    }
+  } else {
+    console.log(chalk.gray("  ERC8004_IDENTITY_REGISTRY not set — skipping identity mint."));
+  }
+  // ────────────────────────────────────────────────────────────────────────
 
   const spinner = ora(isUpdate ? "Updating service on-chain…" : "Registering service on-chain…").start();
   try {
@@ -380,10 +416,17 @@ async function runRegister(): Promise<void> {
       network: config.network,
       agentId,
     });
-    await persistAgentId();
+    // Persist agentId to config so subsequent runs skip the mint.
+    if (agentId !== "0" && config.agentId !== agentId) {
+      config.agentId = agentId;
+      await saveConfig(config).catch(() => {});
+    }
     spinner.succeed(isUpdate ? "Service updated on-chain!" : "Service registered on-chain!");
     console.log(chalk.gray(`    Tx: ${chalk.cyan(result.txnHash)}`));
     console.log(chalk.gray(`    Explorer: ${chalk.cyan(explorerTxUrl(config.network, result.txnHash))}`));
+    if (agentId !== "0") {
+      console.log(chalk.gray(`    ERC-8004 agent #${agentId} linked — reputation will accrue per paid call.`));
+    }
     console.log();
     p.outro(chalk.green("Service is now discoverable on Avalanche!"));
   } catch (error) {

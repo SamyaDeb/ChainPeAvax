@@ -16,7 +16,7 @@ import {
   filterServices,
   rankByReputation,
   type RankedService,
-} from "@chainpe/sdk";
+} from "@chainpeavax/sdk";
 import type { ChainPeNetwork } from "../types.js";
 import { explorerTxUrl } from "../chains.js";
 

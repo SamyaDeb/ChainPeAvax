@@ -115,7 +115,7 @@ const handle = await startProxyServer({
     paymentToken: "AVAX",
     walletAddress: "YOUR_ADDRESS",
     proxyPort: 4402,
-    network: "testnet",
+    network: "avalanche",
   }
 });
 
@@ -125,8 +125,7 @@ console.log(`Proxy running at ${handle.url}`);
 ## Requirements
 
 - Node.js >= 18
-- Avalanche wallet with testnet AVAX for gas
-- Get testnet AVAX: https://faucet.avax.network/
+- Avalanche wallet with AVAX for gas
 
 ## License
 
