@@ -1,6 +1,7 @@
 /** REST query API over the indexed data — makes discovery + reputation O(1). */
 import express, { type Request, type Response } from 'express'
 import cors from 'cors'
+import rateLimit from 'express-rate-limit'
 import type { Db } from './db.js'
 import {
   listActiveServices,
@@ -80,9 +81,18 @@ function toDto(s: ServiceRecord, reputation: ReputationSummary | null): ServiceD
   }
 }
 
+const apiLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'rate_limit_exceeded' }
+})
+
 export function createApi(db: Db) {
   const app = express()
   app.use(cors())
+  app.use(apiLimiter)
 
   app.get('/health', async (_req: Request, res: Response) => {
     const cursor = await getCursor(db).catch(() => null)
@@ -101,6 +111,7 @@ export function createApi(db: Db) {
   })
 
   app.get('/services', async (req: Request, res: Response) => {
+    const MAX_PAGE = 100
     try {
       const records = await listActiveServices(db)
       const repMap = await reputationByAgent(db, records)
@@ -129,7 +140,14 @@ export function createApi(db: Db) {
         items = items.filter(s => parseFloat(s.pricePerRequest) <= max)
       }
 
-      res.json(rankServices(items))
+      const ranked = rankServices(items)
+
+      // Pagination: cap at 100 per page to prevent OOM on large registries.
+      const offset = Math.max(0, parseInt((req.query.offset as string) ?? '0', 10) || 0)
+      const limit = Math.min(MAX_PAGE, Math.max(1, parseInt((req.query.limit as string) ?? String(MAX_PAGE), 10) || MAX_PAGE))
+      const page = ranked.slice(offset, offset + limit)
+
+      res.json({ total: ranked.length, offset, limit, items: page })
     } catch (err) {
       res.status(500).json({ error: (err as Error).message })
     }

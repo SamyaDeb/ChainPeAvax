@@ -120,19 +120,28 @@ export async function runIndexer(
 ): Promise<void> {
   const cursor = await getCursor(deps.db)
   let last = cursor ?? (deps.startBlock > 0n ? deps.startBlock - 1n : 0n)
+  let backoff = 1_000
 
   while (!opts.signal?.aborted) {
-    head = await deps.client.getBlockNumber()
-    if (last >= head) {
-      await sleep(deps.pollIntervalMs)
-      continue
+    try {
+      head = await deps.client.getBlockNumber()
+      if (last >= head) {
+        backoff = 1_000
+        await sleep(deps.pollIntervalMs)
+        continue
+      }
+      const from = last + 1n
+      const end = from + deps.chunk - 1n
+      const to = end > head ? head : end
+      await processRange(deps, from, to)
+      await setCursor(deps.db, to)
+      last = to
+      backoff = 1_000
+      if (to >= head) await sleep(deps.pollIntervalMs)
+    } catch (err) {
+      console.error(`indexer loop error (retrying in ${backoff}ms):`, err)
+      await sleep(backoff)
+      backoff = Math.min(backoff * 2, 60_000)
     }
-    const from = last + 1n
-    const end = from + deps.chunk - 1n
-    const to = end > head ? head : end
-    await processRange(deps, from, to)
-    await setCursor(deps.db, to)
-    last = to
-    if (to >= head) await sleep(deps.pollIntervalMs)
   }
 }

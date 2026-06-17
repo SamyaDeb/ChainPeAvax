@@ -37,7 +37,7 @@ curl localhost:4600/services  # ranked services with reputation
 cd services/chainpe-indexer
 railway init
 railway add --database postgres        # provisions DATABASE_URL
-railway variables --set NETWORK=fuji --set START_BLOCK=<registry-deploy-block>
+railway variables --set NETWORK=avalanche --set START_BLOCK=<registry-deploy-block>
 railway up
 railway domain
 ```

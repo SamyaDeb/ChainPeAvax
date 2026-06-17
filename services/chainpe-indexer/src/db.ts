@@ -23,7 +23,7 @@ export function createDb(connectionString: string): DbHandle {
   )
   const pool = new Pool({
     connectionString,
-    ...(needsSsl ? { ssl: { rejectUnauthorized: false } } : {})
+    ...(needsSsl ? { ssl: { rejectUnauthorized: true } } : {})
   })
   const db = drizzle(pool, { schema })
   return { pool, db }
