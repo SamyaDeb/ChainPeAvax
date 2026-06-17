@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity 0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  * @title ChainPeRegistry
@@ -36,8 +37,20 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
  *   array:   _serviceKeys (bytes32[])
  *   mapping: _keyIndex (bytes32 => uint256, 1-based; 0 = absent)
  */
-contract ChainPeRegistry is Ownable2Step, ReentrancyGuard {
+contract ChainPeRegistry is Ownable2Step, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
+
+    // ------------------------------------------------------------------------
+    // Constants
+    // ------------------------------------------------------------------------
+
+    uint256 public constant MAX_SERVICES_PER_PAGE = 100;
+
+    uint256 private constant MAX_NAME_LEN = 64;
+    uint256 private constant MAX_DESC_LEN = 1024;
+    uint256 private constant MAX_TAGS_LEN = 256;
+    uint256 private constant MAX_ENDPOINT_LEN = 256;
+    uint256 private constant MAX_PRICE_LEN = 32;
 
     // ------------------------------------------------------------------------
     // Types
@@ -85,6 +98,9 @@ contract ChainPeRegistry is Ownable2Step, ReentrancyGuard {
     IERC20 public feeToken;
     address public feeRecipient;
     uint256 public registrationFee;
+    /// @notice Fee charged on `update()`. Defaults to 0 (free updates).
+    /// Set lower than `registrationFee` to incentivize keeping listings fresh.
+    uint256 public updateFee;
     address public identityRegistry;
 
     mapping(bytes32 => Service) private _services;
@@ -124,6 +140,7 @@ contract ChainPeRegistry is Ownable2Step, ReentrancyGuard {
     event FeeTokenUpdated(address indexed oldToken, address indexed newToken);
     event FeeRecipientUpdated(address indexed oldRecipient, address indexed newRecipient);
     event RegistrationFeeUpdated(uint256 oldFee, uint256 newFee);
+    event UpdateFeeUpdated(uint256 oldFee, uint256 newFee);
     event IdentityRegistryUpdated(address indexed oldRegistry, address indexed newRegistry);
 
     // ------------------------------------------------------------------------
@@ -135,6 +152,7 @@ contract ChainPeRegistry is Ownable2Step, ReentrancyGuard {
     error NotServiceDeveloper(address caller, address developer);
     error ZeroAddress();
     error EmptyName();
+    error StringTooLong(string field);
     error InvalidPagination(uint256 offset, uint256 limit);
 
     // ------------------------------------------------------------------------
@@ -165,6 +183,16 @@ contract ChainPeRegistry is Ownable2Step, ReentrancyGuard {
     }
 
     // ------------------------------------------------------------------------
+    // Emergency controls (owner only)
+    // ------------------------------------------------------------------------
+
+    /// @notice Pause register / update / deregister in case of emergency.
+    function pause() external onlyOwner { _pause(); }
+
+    /// @notice Resume normal operation.
+    function unpause() external onlyOwner { _unpause(); }
+
+    // ------------------------------------------------------------------------
     // Key helper
     // ------------------------------------------------------------------------
 
@@ -182,10 +210,13 @@ contract ChainPeRegistry is Ownable2Step, ReentrancyGuard {
      *         `registrationFee` of `feeToken` to this contract.
      * @dev `msg.sender` becomes the listing's `developer`. Reverts if a listing
      *      with the same (developer, name) already exists.
+     *      String fields are capped: name ≤ 64 B, description ≤ 1024 B,
+     *      tags ≤ 256 B, endpoint ≤ 256 B, pricePerRequest ≤ 32 B.
      */
-    function register(ServiceInput calldata input) external nonReentrant returns (bytes32 key) {
+    function register(ServiceInput calldata input) external nonReentrant whenNotPaused returns (bytes32 key) {
         if (bytes(input.name).length == 0) revert EmptyName();
         if (input.payTo == address(0)) revert ZeroAddress();
+        _validateInput(input);
 
         key = computeKey(msg.sender, input.name);
         if (_services[key].exists) revert ServiceAlreadyExists(key);
@@ -228,9 +259,13 @@ contract ChainPeRegistry is Ownable2Step, ReentrancyGuard {
      * @notice Update an existing service. Only the original developer may call.
      *         Requires the registration fee (mirrors the Algorand contract,
      *         which charged 1 ALGO on update as well).
+     * @dev Note: `setFeeToken` changes take effect immediately. If the owner
+     *      changes `feeToken`, callers who approved the old token must re-approve
+     *      the new one. Consider pausing the contract before changing the fee token.
      */
-    function update(ServiceInput calldata input) external nonReentrant returns (bytes32 key) {
+    function update(ServiceInput calldata input) external nonReentrant whenNotPaused returns (bytes32 key) {
         if (input.payTo == address(0)) revert ZeroAddress();
+        _validateInput(input);
 
         key = computeKey(msg.sender, input.name);
         Service storage svc = _services[key];
@@ -248,7 +283,7 @@ contract ChainPeRegistry is Ownable2Step, ReentrancyGuard {
         svc.agentId = input.agentId;
         svc.updatedAt = uint64(block.timestamp);
 
-        _collectFee();
+        _collectUpdateFee();
 
         emit ServiceUpdated(
             key,
@@ -265,7 +300,7 @@ contract ChainPeRegistry is Ownable2Step, ReentrancyGuard {
     /**
      * @notice Remove a service. Only the original developer may call. No fee.
      */
-    function deregister(string calldata name) external nonReentrant {
+    function deregister(string calldata name) external nonReentrant whenNotPaused {
         bytes32 key = computeKey(msg.sender, name);
         Service storage svc = _services[key];
         if (!svc.exists) revert ServiceNotFound(key);
@@ -306,11 +341,13 @@ contract ChainPeRegistry is Ownable2Step, ReentrancyGuard {
     /**
      * @notice Paginated list of services — the EVM replacement for Algorand box
      *         enumeration. Returns up to `limit` services starting at `offset`.
+     *         `limit` is capped at `MAX_SERVICES_PER_PAGE` (100).
      */
     function getServices(uint256 offset, uint256 limit) external view returns (Service[] memory page) {
         uint256 total = _serviceKeys.length;
         if (offset > total) revert InvalidPagination(offset, limit);
         if (limit == 0) revert InvalidPagination(offset, limit);
+        if (limit > MAX_SERVICES_PER_PAGE) revert InvalidPagination(offset, limit);
 
         uint256 end = offset + limit;
         if (end > total) end = total;
@@ -336,12 +373,24 @@ contract ChainPeRegistry is Ownable2Step, ReentrancyGuard {
         registrationFee = newFee;
     }
 
+    /// @notice Set the fee charged on `update()`. May be zero for free updates.
+    function setUpdateFee(uint256 newFee) external onlyOwner {
+        emit UpdateFeeUpdated(updateFee, newFee);
+        updateFee = newFee;
+    }
+
     function setFeeRecipient(address newRecipient) external onlyOwner {
         if (newRecipient == address(0)) revert ZeroAddress();
         emit FeeRecipientUpdated(feeRecipient, newRecipient);
         feeRecipient = newRecipient;
     }
 
+    /**
+     * @notice Replace the fee token. Takes effect immediately.
+     * @dev To avoid a race between callers who approved the old token and this
+     * change taking effect, pause the contract (`pause()`) before calling
+     * `setFeeToken`, update approvals, then `unpause()`.
+     */
     function setFeeToken(IERC20 newToken) external onlyOwner {
         if (address(newToken) == address(0)) revert ZeroAddress();
         emit FeeTokenUpdated(address(feeToken), address(newToken));
@@ -353,16 +402,42 @@ contract ChainPeRegistry is Ownable2Step, ReentrancyGuard {
         identityRegistry = newRegistry; // 0 allowed (unset)
     }
 
+    /**
+     * @notice Rescue tokens accidentally sent directly to this contract.
+     * @dev The registry does not intentionally hold tokens (fees go straight to
+     * `feeRecipient`). This recovers any stuck ERC-20 tokens.
+     */
+    function ownerWithdraw(IERC20 tkn, uint256 amount) external onlyOwner {
+        tkn.safeTransfer(owner(), amount);
+    }
+
     // ------------------------------------------------------------------------
     // Internal
     // ------------------------------------------------------------------------
 
-    /// @dev Pulls `registrationFee` of `feeToken` from the caller to `feeRecipient`.
+    /// @dev Pulls `registrationFee` from the caller to `feeRecipient`.
     function _collectFee() private {
         uint256 fee = registrationFee;
         if (fee == 0) return;
         feeToken.safeTransferFrom(msg.sender, feeRecipient, fee);
         emit RegistrationFeePaid(msg.sender, feeRecipient, fee);
+    }
+
+    /// @dev Pulls `updateFee` from the caller to `feeRecipient` (may be 0 = free).
+    function _collectUpdateFee() private {
+        uint256 fee = updateFee;
+        if (fee == 0) return;
+        feeToken.safeTransferFrom(msg.sender, feeRecipient, fee);
+        emit RegistrationFeePaid(msg.sender, feeRecipient, fee);
+    }
+
+    /// @dev Validates string field lengths to prevent spam registrations.
+    function _validateInput(ServiceInput calldata input) private pure {
+        if (bytes(input.name).length > MAX_NAME_LEN) revert StringTooLong("name");
+        if (bytes(input.description).length > MAX_DESC_LEN) revert StringTooLong("description");
+        if (bytes(input.tags).length > MAX_TAGS_LEN) revert StringTooLong("tags");
+        if (bytes(input.endpoint).length > MAX_ENDPOINT_LEN) revert StringTooLong("endpoint");
+        if (bytes(input.pricePerRequest).length > MAX_PRICE_LEN) revert StringTooLong("pricePerRequest");
     }
 
     /// @dev Swap-and-pop removal from the enumeration array.
