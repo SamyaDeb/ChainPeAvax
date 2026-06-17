@@ -25,7 +25,7 @@ import { createChainPeTools } from '@chainpe/ai-tools/vercel'
 
 const tools = createChainPeTools({
   privateKey: process.env.PRIVATE_KEY!,
-  network: 'fuji',
+  network: 'avalanche',
   autoFeedback: true // leave on-chain reputation after each paid call
 })
 
@@ -46,7 +46,7 @@ import { createChainPeLangChainTools } from '@chainpe/ai-tools/langchain'
 
 const { chainpeFetchTool, discoverServiceTool } = createChainPeLangChainTools({
   privateKey: process.env.PRIVATE_KEY!,
-  network: 'fuji',
+  network: 'avalanche',
   autoFeedback: true
 })
 
@@ -65,7 +65,7 @@ pre-built client via `{ client }`:
 
 ```ts
 import { ChainPe } from '@chainpe/sdk'
-const client = new ChainPe({ privateKey, network: 'fuji' })
+const client = new ChainPe({ privateKey, network: 'avalanche' })
 const tools = createChainPeTools({ client })
 ```
 
@@ -77,7 +77,7 @@ same logic into any tool-calling runtime:
 ```ts
 import { fetchInputSchema, runFetch, getClient } from '@chainpe/ai-tools'
 
-const client = getClient({ privateKey, network: 'fuji' })
+const client = getClient({ privateKey, network: 'avalanche' })
 const result = await runFetch(client, { url: 'https://api.example.com/paid' })
 ```
 
