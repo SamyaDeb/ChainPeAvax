@@ -1,0 +1,9 @@
+# ──────────────────────────────────────────────────────────────
+# GitHub Linguist overrides
+# Tell Linguist to exclude generated / vendored files from
+# the repository language statistics shown on GitHub.
+# ──────────────────────────────────────────────────────────────
+
+# Generated documentation HTML (static-site output)
+apps/dashboard/public/docs/** linguist-generated
+apps/landing/public/docs/** linguist-generated
